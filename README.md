@@ -1,0 +1,86 @@
+# Kontrol
+
+Instagram yorum kontrol ve token yonetim paneli.
+
+## Ozellikler
+
+- Flask tabanli web arayuzu
+- Admin panelinden token ekleme/guncelleme/silme
+- Token gecerlilik kontrolu ve otomatik pasife alma
+- Yorum kontrolu icin aktif ve calisan token secimi
+- Veri saklama: `app.db` (SQLite)
+
+## Gereksinimler
+
+- Python 3.10+
+- Git
+- Internet baglantisi
+
+## Kurulum (Linux/macOS)
+
+### 1) Repo'yu klonla
+
+```bash
+git clone https://github.com/seghobs/kontrol.git
+cd kontrol
+```
+
+### 2) Kurulum scripti ile izinleri ayarla
+
+```bash
+chmod +x setup_kontrol.sh
+./setup_kontrol.sh
+```
+
+Not: `setup_kontrol.sh` projeyi calistirmaz, sadece klonlama ve gerekli yazma/okuma izinlerini ayarlar.
+
+## Alternatif kurulum (script olmadan)
+
+```bash
+git clone https://github.com/seghobs/kontrol.git
+cd kontrol
+chmod -R u+rwX .
+```
+
+## Uygulamayi calistirma
+
+```bash
+python flask_app.py
+```
+
+Uygulama adresi:
+
+```text
+http://127.0.0.1:5000
+```
+
+Admin giris:
+
+```text
+http://127.0.0.1:5000/admin/login
+```
+
+## Windows notu
+
+Windows'ta `.sh` yerine su adimlari kullan:
+
+```powershell
+git clone https://github.com/seghobs/kontrol.git
+cd kontrol
+python flask_app.py
+```
+
+## Proje yapisi
+
+- `flask_app.py`: uygulama giris noktasi
+- `app_core/`: moduler backend kodu
+  - `routes/`: route dosyalari
+  - `storage.py`: SQLite (`app.db`) islemleri
+  - `token_service.py`: token akis/failover islemleri
+- `templates/`: HTML dosyalari
+- `static/js/`: ayri JavaScript dosyalari
+
+## Notlar
+
+- Veritabani dosyasi: `app.db`
+- JSON dosyalari (`token.json`, `tokens.json`, `exemptions.json`) eski veriler icin migration amacli olabilir; aktif sistem DB uzerinden calisir.
