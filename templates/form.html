@@ -267,13 +267,13 @@
                                 <i class="fas fa-users me-2"></i>Grup Üye Listesi
                             </label>
                             <div class="mb-2">
-                                <select id="groupSelect" class="form-control" onchange="loadGroupMembers()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+                                <select id="groupSelect" class="form-control custom-select" onchange="loadGroupMembers()">
                                     <option value="">-- Instagram Grubu Seç --</option>
                                 </select>
                             </div>
                             <div id="groupPostsSection" class="mb-2" style="display: none;">
                                 <div class="d-flex gap-2 mb-2">
-                                    <select id="dateFilter" class="form-control" onchange="loadGroupPosts()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+                                    <select id="dateFilter" class="form-control custom-select" onchange="loadGroupPosts()">
                                         <option value="today">Bugün</option>
                                         <option value="yesterday">Dün</option>
                                     </select>
@@ -281,16 +281,41 @@
                                         <i class="fas fa-sync"></i>
                                     </button>
                                 </div>
-                                <select id="postSelect" class="form-control" onchange="addPostLink()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+                                <select id="postSelect" class="form-control custom-select" onchange="addPostLink()">
                                     <option value="">-- Paylaşım Seç --</option>
                                 </select>
                                 <button type="button" class="btn btn-sm mt-2" onclick="addAllPosts()" style="background: rgba(46, 204, 113, 0.2); border: 1px solid rgba(46, 204, 113, 0.4); color: #2ecc71;">
                                     <i class="fas fa-plus me-1"></i> Tümünü Ekle
                                 </button>
                                 <style>
-                                    #postSelect option, #dateFilter option {
+                                    .custom-select {
+                                        background: rgba(255,255,255,0.08) !important;
+                                        border: 1px solid rgba(255,255,255,0.15) !important;
+                                        color: #fff !important;
+                                        border-radius: 8px;
+                                        padding: 10px 35px 10px 12px;
+                                        appearance: none;
+                                        -webkit-appearance: none;
+                                        -moz-appearance: none;
+                                        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23ffffff' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+                                        background-repeat: no-repeat;
+                                        background-position: right 12px center;
+                                        cursor: pointer;
+                                        transition: all 0.2s ease;
+                                    }
+                                    .custom-select:hover {
+                                        border-color: rgba(255,255,255,0.3) !important;
+                                        background-color: rgba(255,255,255,0.12) !important;
+                                    }
+                                    .custom-select:focus {
+                                        outline: none;
+                                        border-color: #6c5ce7 !important;
+                                        box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.25);
+                                    }
+                                    .custom-select option {
                                         background: #1a1a2e;
                                         color: #fff;
+                                        padding: 10px;
                                     }
                                 </style>
                             </div>
