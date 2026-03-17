@@ -11,6 +11,25 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            /* Premium Dark Mode Colors */
+            --bg-deep: #0f111a;
+            --bg-card: #1e2130;
+            --bg-hover: #292d3e;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --accent-primary: #6366f1; /* Indigo */
+            --accent-hover: #4f46e5;
+            --success-color: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.1);
+            --danger-color: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.1);
+            --warning-color: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.1);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --glass-blur: blur(12px);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -20,10 +39,23 @@
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #000000 0%, #0a0a1a 50%, #0d0d1f 100%);
+            color: var(--text-primary);
             min-height: 100vh;
             padding: 20px 10px;
             position: relative;
             overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(30, 30, 60, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(20, 20, 50, 0.15) 0%, transparent 50%);
+            pointer-events: none;
         }
 
         /* Responsive container */
@@ -38,209 +70,207 @@
             border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            padding: 20px 15px;
+            padding: 24px 16px;
             position: relative;
             z-index: 1;
+            width: 100%;
+            max-width: 100%;
         }
 
         .result-card h1 {
-            color: #fff;
-            font-weight: 600;
-            font-size: 20px;
-            line-height: 1.3;
+            color: #ffffff;
+            font-weight: 700;
+            margin-bottom: 20px;
+            font-size: 28px;
+            text-align: center;
+            letter-spacing: -0.5px;
         }
 
         /* Responsive text sizes */
         h5, .h5 {
-            font-size: 14px;
+            font-size: 15px;
+            font-weight: 600;
         }
         
         .username-text {
-            font-size: 13px;
+            font-size: 14px;
+            color: var(--text-primary);
         }
 
         .btn {
             font-size: 13px;
-            padding: 8px 14px;
+            padding: 10px 16px;
             white-space: normal;
             word-break: break-word;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
 
         .btn-sm {
             font-size: 12px;
-            padding: 6px 10px;
+            padding: 6px 12px;
+            border-radius: 8px;
         }
 
         /* Responsive list items */
+        .list-group {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            background: rgba(0,0,0,0.1);
+        }
         .list-group-item {
-            padding: 10px 12px;
-            font-size: 13px;
-            flex-wrap: wrap;
-        }
-
-        .search-input {
-            padding: 10px 12px 10px 38px;
-            font-size: 13px;
-        }
-
-        .search-icon {
-            left: 12px;
+            padding: 14px 16px;
             font-size: 14px;
+            background: transparent;
+            border-color: var(--border-color);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.2s ease;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .list-group-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(4px);
+        }
+
+        /* Search input styling */
+        .search-container {
+            position: relative;
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px 16px 12px 42px;
+            font-size: 13px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.08); /* form-control uyumu */
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            transition: all 0.3s ease;
+        }
+        .search-input:focus {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: #7877c6;
+            outline: none;
+            box-shadow: 0 0 0 0.2rem rgba(120, 119, 198, 0.25);
+        }
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            color: var(--text-secondary);
         }
 
         /* Mobile-first responsive styles */
         @media (min-width: 576px) {
-            body {
-                padding: 25px 15px;
-            }
-            .result-card {
-                padding: 25px 20px;
-                border-radius: 20px;
-            }
-            .result-card h1 {
-                font-size: 24px;
-            }
+            body { padding: 30px 15px; }
+            .result-card { padding: 30px 24px; border-radius: 24px; }
+            .result-card h1 { font-size: 26px; }
         }
 
         @media (min-width: 768px) {
-            body {
-                padding: 30px 20px;
-            }
-            .result-card {
-                padding: 30px;
-                border-radius: 24px;
-            }
-            .result-card h1 {
-                font-size: 28px;
-            }
-            .username-text {
-                font-size: 14px;
-            }
-            .btn {
-                font-size: 14px;
-            }
+            body { padding: 40px 20px; }
+            .result-card { padding: 40px; border-radius: 24px; }
+            .result-card h1 { font-size: 30px; }
+            .username-text { font-size: 15px; }
+            .btn { font-size: 14px; }
         }
 
         @media (min-width: 992px) {
-            .container {
-                max-width: 800px;
-            }
-            .result-card {
-                padding: 35px;
-            }
+            .container { max-width: 850px; }
+            .result-card { padding: 40px 48px; }
         }
 
-        @media (min-width: 1200px) {
-            .container {
-                max-width: 900px;
-            }
-        }
-
-        /* Fix for small screens */
-        @media (max-width: 400px) {
-            .result-card h1 {
-                font-size: 16px;
-            }
-            .btn {
-                font-size: 11px;
-                padding: 6px 10px;
-            }
-            .list-group-item {
-                padding: 8px 10px;
-                font-size: 12px;
-            }
-            .search-input {
-                font-size: 12px;
-                padding: 8px 10px 8px 35px;
-            }
-        }
-
-        /* Touch-friendly buttons for mobile */
-        @media (hover: none) and (pointer: coarse) {
-            .btn {
-                min-height: 44px;
-            }
-            .list-group-item {
-                min-height: 44px;
-            }
-        }
-
-        /* Responsive grid for cards */
+        /* Card Sections Headers */
         .link-card, .eksikler-section-header, .completed-section-header {
-            padding: 12px !important;
+            padding: 16px !important;
+            background: rgba(255, 255, 255, 0.03) !important;
+            border-radius: 14px !important;
+            border: 1px solid var(--border-color) !important;
+            transition: background 0.2s ease, border-color 0.2s ease;
+            cursor: pointer;
         }
-
-        /* Flexbox fixes */
-        .d-flex {
-            flex-wrap: wrap;
-        }
-
-        .gap-2 {
-            gap: 8px !important;
-        }
-
-        /* Mobile-friendly dropdowns */
-        .dropdown-menu {
-            max-height: 250px;
-            overflow-y: auto;
-        }
-
-        /* Card fixes */
-        .result-card {
-            margin: 0 5px;
-        }
-            border-radius: 12px;
-            color: #fff;
-            margin-bottom: 10px;
-            padding: 15px 20px;
-            transition: all 0.3s ease;
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .list-group-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(120, 119, 198, 0.3);
-            transform: translateX(5px);
+        .eksikler-section-header:hover, .completed-section-header:hover {
+            background: rgba(255,255,255, 0.06) !important;
+            border-color: rgba(255,255,255, 0.15) !important;
         }
 
         .btn-primary {
             background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 14px;
-            font-weight: 600;
             color: #fff;
-            transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
         }
-
         .btn-primary:hover {
             background: linear-gradient(135deg, #252538 0%, #1a1a2e 100%);
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
             border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #252538 0%, #1a1a2e 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+        
+        .btn-admin {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .btn-admin:hover {
+            background: linear-gradient(135deg, #252538 0%, #1a1a2e 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
         }
 
         .notification {
             position: fixed;
-            bottom: 20px;
+            bottom: 30px;
             left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(16, 185, 129, 0.1);
+            backdrop-filter: blur(12px);
+            color: var(--text-primary);
+            padding: 16px 24px;
+            border-radius: 14px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
             opacity: 0;
-            transition: opacity 0.3s, transform 0.3s;
-            min-width: 300px;
-            max-width: 600px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            min-width: 320px;
+            max-width: 90%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             z-index: 1000;
+            display: flex;
+            align-items: center;
         }
 
         .notification.visible {
@@ -260,8 +290,8 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
             display: none;
             align-items: center;
             justify-content: center;
@@ -274,40 +304,39 @@
         }
 
         .modal-content {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-            padding: 30px;
-            max-width: 400px;
+            background: var(--bg-card);
+            border-radius: 24px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            padding: 32px;
+            max-width: 420px;
             width: 90%;
-            animation: slideUp 0.3s ease;
+            animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .modal-header {
-            color: #fff;
-            font-size: 20px;
+            color: #ffffff;
+            font-size: 22px;
             font-weight: 600;
-            margin-bottom: 15px;
+            margin-bottom: 16px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
         .modal-header i {
-            color: #fbbf24;
+            color: var(--warning-color);
         }
 
         .modal-body {
-            color: rgba(255, 255, 255, 0.8);
+            color: var(--text-secondary);
             font-size: 15px;
-            margin-bottom: 25px;
+            margin-bottom: 28px;
             line-height: 1.6;
         }
 
         .modal-username {
-            color: #fbbf24;
+            color: var(--accent-primary);
             font-weight: 600;
         }
 
@@ -318,23 +347,26 @@
         }
 
         .modal-btn {
-            padding: 12px 20px;
-            border-radius: 10px;
+            padding: 14px 20px;
+            border-radius: 12px;
             font-weight: 600;
             font-size: 14px;
             border: none;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
 
         .modal-btn-cancel {
-            background: rgba(255, 255, 255, 0.05);
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #fff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
         }
 
         .modal-btn-cancel:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: linear-gradient(135deg, #252538 0%, #1a1a2e 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
             border-color: rgba(255, 255, 255, 0.2);
         }
 
@@ -377,16 +409,17 @@
             color: #fff;
             font-size: 13px;
             transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
             white-space: nowrap;
             flex-shrink: 0;
         }
 
         .btn-exemption:hover {
             background: linear-gradient(135deg, #252538 0%, #1a1a2e 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
             border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
         }
 
         .btn-exemption:disabled {
@@ -414,8 +447,8 @@
 </head>
 <body data-rate-limited='{{ "true" if rate_limited else "false" }}'>
     {% if rate_limited %}
-    <div class="alert alert-warning text-center mx-3 mt-3" style="background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); color: #fbbf24; border-radius: 12px;">
-        <i class="fas fa-clock me-2"></i>Çok fazla istek; Instagram gecici sinir koydu. Lutfen 10–15 dakika bekleyip tekrar deneyin.
+    <div class="alert alert-warning text-center mx-3 mt-3 shadow-lg" style="background: var(--warning-bg); border: 1px solid rgba(245,158,11,0.3); color: var(--warning-color); border-radius: 16px;">
+        <i class="fas fa-clock me-2"></i>Çok fazla istek; Instagram geçici sınır koydu. Lütfen 10–15 dakika bekleyip tekrar deneyin.
     </div>
     {% endif %}
     <div class="container">
@@ -430,8 +463,8 @@
 
                     {% if all_commented and all_commented|length > 0 %}
                     <div class="mb-4">
-                        <div class="completed-section-header" onclick="toggleCompletedSection()" style="cursor: pointer; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-                            <h5 class="mb-0" style="color: #fff; display: flex; align-items: center; justify-content: space-between;">
+                        <div class="completed-section-header shadow-sm" onclick="toggleCompletedSection()" style="cursor: pointer; padding: 16px; background: rgba(16, 185, 129, 0.05); border-radius: 14px; border: 1px solid rgba(16, 185, 129, 0.2);">
+                            <h5 class="mb-0" style="color: #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
                                 <span>
                                     <i class="fas fa-user-check me-2"></i>Tamamlamış Kullanıcılar
                                     <span class="completed-badge">{{ all_commented|length }} kisi</span>
@@ -445,7 +478,7 @@
                                 <input type="text" id="completedSearchInput" placeholder="Kullanıcı adı ara..." 
                                        class="search-input" onkeyup="filterCompletedList()">
                             </div>
-                            <button class="btn btn-primary mb-3" onclick="copyCompletedList()">
+                            <button class="btn btn-primary mb-3" onclick="window.copyCompletedList()">
                                 <i class="fas fa-copy me-2"></i>Tamamlamış Listeyi Kopyala
                             </button>
                             <ul class="list-group list-group-flush" id="completedList">
@@ -463,14 +496,17 @@
 
                     <div class="mt-4">
                         {% for item in links %}
-                        <div class="mb-4 link-card">
-                            <div class="eksikler-section-header" onclick="toggleEksiklerSection({{ loop.index }})" style="cursor: pointer; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="mb-4 link-card shadow-sm" style="border-radius: 16px; background: rgba(0,0,0,0.2);">
+                            <div class="eksikler-section-header" onclick="toggleEksiklerSection({{ loop.index }})">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
-                                        <strong style="color: #fff;">Eksikler</strong>
-                                        <a href="{{ item.post_link }}" target="_blank" onclick="event.stopPropagation(); copyLink('{{ item.post_link }}')" style="color: #93c5fd; text-decoration: none; margin-left: 10px;" title="Linki kopyala">
+                                        <strong style="color: var(--text-primary); font-size: 16px;">Eksikler</strong>
+                                        <a href="{{ item.post_link }}" target="_blank" onclick="event.stopPropagation();" style="color: var(--accent-primary); text-decoration: none; margin-left: 12px; font-size: 14px;" title="Linke Git">
                                             <i class="fas fa-link"></i>
                                         </a>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation(); window.copyLink('{{ item.post_link }}')" style="margin-left: 10px; padding: 4px 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary);" title="Linki kopyala">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
                                     </div>
                                     <div class="d-flex align-items-center gap-2">
                                         <span id="elemanSayisi-{{ loop.index }}" class="badge bg-secondary"></span>
@@ -486,7 +522,7 @@
                                            class="search-input" onkeyup="filterEksiklerList({{ loop.index }})">
                                 </div>
 
-                                <button class="btn btn-primary mb-3" onclick="copyEksiklerList({{ loop.index }})">
+                                <button class="btn btn-primary mb-3" onclick="window.copyEksiklerList(`{{ loop.index }}`)">
                                     <i class="fas fa-copy me-2"></i>Bu Link icin Eksikleri Kopyala
                                 </button>
 
@@ -498,7 +534,7 @@
                                         <span class="username-text">
                                             <i class="fas fa-user me-2"></i><strong>{{ eksik }}</strong>
                                         </span>
-                                        <button class="btn btn-exemption" onclick="addExemption('{{ eksik }}', '{{ item.post_link|e }}', this)">
+                                        <button class="btn btn-exemption" onclick="window.addExemption('{{ eksik }}', '{{ item.post_link }}', this)">
                                             <i class="fas fa-check me-1"></i>İzinli Say
                                         </button>
                                     </li>
@@ -510,31 +546,30 @@
                     </div>
                     
                     {% if user_missing_posts %}
-                    <div class="mt-4" style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
-                        <h5 style="color: #fff; margin-bottom: 15px;">
-                            <i class="fas fa-user-times me-2"></i>Eksik Kullanıcı Detaylı Rapor
+                    <div class="mt-5" style="background: rgba(0, 0, 0, 0.2); border-radius: 16px; padding: 24px; border: 1px solid var(--border-color);">
+                        <h5 style="color: #ffffff; margin-bottom: 12px; font-size: 18px;">
+                            <i class="fas fa-user-times me-2" style="color: var(--danger-color);"></i>Eksik Kullanıcı Detaylı Rapor
                         </h5>
-                        <p style="color: rgba(255,255,255,0.6); font-size: 13px; margin-bottom: 15px;">
+                        <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 20px;">
                             Aşağıda her eksik kullanıcının hangi postlarda eksik olduğu gösterilmektedir.
                         </p>
                         {% for username, posts in user_missing_posts.items() %}
-                        <div class="mb-3" style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px;">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <strong style="color: #e74c3c;">
-                                    <i class="fas fa-user me-1"></i>@{{ username }}
-                                    <span style="color: rgba(255,255,255,0.5); font-weight: normal;">({{ posts|length }} eksik)</span>
+                        <div class="mb-3" style="background: rgba(255, 255, 255, 0.03); border-radius: 12px; padding: 16px; border: 1px solid var(--border-color); transition: transform 0.2s;">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <strong style="color: var(--warning-color); font-size: 15px;">
+                                    <i class="fas fa-user me-2"></i>@{{ username }}
+                                    <span style="color: var(--text-secondary); font-weight: normal; margin-left: 6px;">({{ posts|length }} eksik)</span>
                                 </strong>
-                                <button class="btn btn-sm" onclick="copyUserMissingPosts('{{ username }}')" 
-                                        style="background: rgba(46, 204, 113, 0.2); border: 1px solid rgba(46, 204, 113, 0.4); color: #2ecc71;">
+                                <button class="btn btn-sm btn-primary" onclick="window.copyUserMissingPosts('{{ username }}')">
                                     <i class="fas fa-copy me-1"></i>Tüm Linkleri Kopyala
                                 </button>
                             </div>
                             <div id="missing-posts-{{ username }}" style="font-size: 12px; color: rgba(255,255,255,0.7);">
                                 {% for post in posts %}
-                                <div class="d-flex align-items-center gap-2 mb-1">
-                                    <a href="{{ post }}" target="_blank" style="color: #93c5fd;">{{ post }}</a>
-                                    <i class="fas fa-link" style="cursor: pointer; color: rgba(255,255,255,0.5);" 
-                                       onclick="copyToClipboard('{{ post }}')" title="Kopyala"></i>
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <a href="{{ post }}" target="_blank" style="color: #ffffff; text-decoration: underline; text-decoration-color: var(--border-color); text-underline-offset: 2px;">{{ post }}</a>
+                                    <i class="fas fa-copy" style="cursor: pointer; color: var(--text-secondary); margin-left: 8px; transition: color 0.2s;" 
+                                       onclick="window.copyToClipboard('{{ post }}')" title="Kopyala" onmouseover="this.style.color='var(--accent-primary)'" onmouseout="this.style.color='var(--text-secondary)'"></i>
                                 </div>
                                 {% endfor %}
                             </div>

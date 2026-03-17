@@ -183,18 +183,14 @@
                 font-size: 14px;
             }
         }
-            max-width: 500px;
-            width: 100%;
-            position: relative;
-            z-index: 1;
-        }
 
         .form-card h2 {
-            color: #fff;
-            font-weight: 600;
+            color: #ffffff;
+            font-weight: 700;
             margin-bottom: 30px;
             font-size: 28px;
             text-align: center;
+            letter-spacing: -0.5px;
         }
 
         .form-label {
@@ -255,17 +251,20 @@
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.03);
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
             padding: 14px;
             font-weight: 600;
             color: #fff;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
         }
 
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.08);
+            background: linear-gradient(135deg, #252538 0%, #1a1a2e 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
             border-color: rgba(255, 255, 255, 0.2);
             color: #fff;
         }
@@ -278,6 +277,7 @@
             font-weight: 600;
             color: #fff;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
         }
 
         .btn-admin:hover {
@@ -418,7 +418,7 @@
                             </div>
                             <div id="groupPostsSection" class="mb-2" style="display: none;">
                                 <div class="d-flex gap-2 mb-2">
-                                    <div class="custom-dropdown small" id="dateDropdown" style="width: 120px;">
+                                    <div class="custom-dropdown flex-grow-1" id="dateDropdown">
                                         <button type="button" class="dropdown-trigger" onclick="toggleDropdown('dateDropdown')">
                                             <span class="dropdown-text">Bugün</span>
                                             <i class="fas fa-chevron-down dropdown-arrow"></i>
@@ -434,7 +434,7 @@
                                         <option value="today">Bugün</option>
                                         <option value="yesterday">Dün</option>
                                     </select>
-                                    <button type="button" class="btn btn-sm" onclick="loadGroupPostsWithCurrentGroup()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff;">
+                                    <button type="button" class="btn btn-sm" onclick="loadGroupPostsWithCurrentGroup()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 0 16px; border-radius: 12px;">
                                         <i class="fas fa-sync"></i>
                                     </button>
                                 </div>
@@ -451,7 +451,7 @@
                                 <select id="postSelect" class="hidden-select" onchange="addPostLink()">
                                     <option value="">-- Paylaşım Seç --</option>
                                 </select>
-                                <button type="button" class="btn btn-sm mt-2" onclick="addAllPosts()" style="background: rgba(46, 204, 113, 0.2); border: 1px solid rgba(46, 204, 113, 0.4); color: #2ecc71;">
+                                <button type="button" class="btn btn-primary btn-sm mt-2 w-100" onclick="addAllPosts()">
                                     <i class="fas fa-plus me-1"></i> Tümünü Ekle
                                 </button>
                                 <style>
@@ -525,13 +525,20 @@
                                         transform: translateY(0);
                                     }
                                     .dropdown-search {
+                                        width: calc(100% - 16px);
+                                        margin: 8px;
                                         padding: 12px 16px;
-                                        background: rgba(0, 0, 0, 0.3);
-                                        border: none;
-                                        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                                        background: rgba(0, 0, 0, 0.4);
+                                        border: 1px solid rgba(255, 255, 255, 0.1);
+                                        border-radius: 8px;
                                         color: #fff;
                                         font-size: 13px;
                                         outline: none;
+                                        transition: border-color 0.2s;
+                                    }
+                                    .dropdown-search:focus {
+                                        border-color: rgba(168, 85, 247, 0.6);
+                                        box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.15);
                                     }
                                     .dropdown-search::placeholder {
                                         color: rgba(255, 255, 255, 0.4);
