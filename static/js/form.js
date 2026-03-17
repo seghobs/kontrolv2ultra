@@ -40,6 +40,8 @@ function loadGroups() {
                         textSpan.textContent = `${g.name} (${g.member_count} üye)`;
                         select.value = g.id;
                         
+                        alert("Grup seçildi: " + g.id + " - Üyeler yükleniyor...");
+                        
                         // Load members when group is selected
                         loadGroupMembers();
                         
@@ -67,7 +69,11 @@ function loadGroupMembers() {
     const postSelect = document.getElementById("postSelect");
     const dropdownText = document.querySelector('#groupDropdown .dropdown-text');
     
+    console.log("loadGroupMembers called, threadId:", threadId);
+    console.log("textarea element:", textarea);
+    
     if (!threadId) {
+        console.log("No threadId, hiding posts section");
         postsSection.style.display = "none";
         return;
     }
@@ -81,6 +87,7 @@ function loadGroupMembers() {
     fetch("/api/get_group_members/" + threadId)
         .then(r => r.json())
         .then(data => {
+            console.log("API response:", data);
             select.disabled = false;
             
             if (!data.ok) {
@@ -90,11 +97,15 @@ function loadGroupMembers() {
             }
             
             if (data.usernames && data.usernames.length > 0) {
+                console.log("Setting textarea value with", data.usernames.length, "usernames");
                 textarea.value = data.usernames.join("\n");
                 updateUserCount();
+            } else {
+                console.log("No usernames returned");
             }
         })
         .catch(err => {
+            console.error("Error loading members:", err);
             select.disabled = false;
             if (dropdownText) dropdownText.textContent = "-- Instagram Grubu Seç --";
             showTokenErrorModal("Üyeler yüklenemedi: " + err.message);
