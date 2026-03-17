@@ -123,7 +123,9 @@ def index():
             
             # Her link arasinda random bekleme (insan davranisi)
             if link_count > 0:
-                delay = round(random.uniform(4.5, 8.5), 2)  # 4.5-8.5 saniye arası, daha doğal
+                delay = round(random.uniform(4.0, 9.0) + random.random(), 2)
+                if delay > 10.0:
+                    delay = round(delay - 1.0, 2)
                 logger.info(f"Bekleme: {delay} saniye...")
                 time.sleep(delay)
             
