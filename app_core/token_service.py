@@ -48,6 +48,18 @@ def get_working_active_token(excluded_usernames=None, skip_validation=False):
         if not android_id or not user_agent or not device_id or not token_value:
             continue
 
+        # Validate token before using
+        if not skip_validation:
+            from app_core.instagram_api import validate_token
+            is_valid = validate_token(token_record)
+            if not is_valid:
+                # Token expired/invalid - mark as inactive
+                logger.info("Token expired/invalid: @%s", username)
+                deactivate_token(tokens, username, "Token sure doldu veya gecersiz")
+                save_tokens(tokens)
+                excluded_usernames.add(username)
+                continue
+
         return token_record
 
     return None
