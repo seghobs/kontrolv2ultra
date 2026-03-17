@@ -123,6 +123,37 @@ function loadGroupMembers(threadIdFromDropdown) {
     loadGroupPosts(threadId);
 }
 
+// Wrapper function to load posts when date changes
+function selectDateAndLoadPosts(dateValue, dateText) {
+    // Update hidden select
+    const dateFilter = document.getElementById('dateFilter');
+    if (dateFilter) {
+        dateFilter.value = dateValue;
+    }
+    
+    // Update dropdown text
+    const textSpan = document.querySelector('#dateDropdown .dropdown-text');
+    if (textSpan) {
+        textSpan.textContent = dateText;
+    }
+    
+    // Close dropdown
+    document.querySelector('#dateDropdown .dropdown-menu').classList.remove('show');
+    document.querySelector('#dateDropdown .dropdown-trigger').classList.remove('active');
+    
+    // Load posts with current group
+    loadGroupPostsWithCurrentGroup();
+}
+
+// Load posts using current group selection
+function loadGroupPostsWithCurrentGroup() {
+    const groupSelect = document.getElementById("groupSelect");
+    const threadId = groupSelect ? groupSelect.value : '';
+    if (threadId) {
+        loadGroupPosts(threadId);
+    }
+}
+
 function addPostLink() {
     const postSelect = document.getElementById("postSelect");
     const link = postSelect.value;
@@ -256,6 +287,8 @@ function loadGroupPosts(threadIdFromMembers) {
 
 window.addPostLink = addPostLink;
 window.loadGroupPosts = loadGroupPosts;
+window.loadGroupPostsWithCurrentGroup = loadGroupPostsWithCurrentGroup;
+window.selectDateAndLoadPosts = selectDateAndLoadPosts;
 window.addAllPosts = addAllPosts;
 
 window.loadGroups = loadGroups;

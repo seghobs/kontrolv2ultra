@@ -425,16 +425,16 @@
                                         </button>
                                         <div class="dropdown-menu">
                                             <div class="dropdown-options">
-                                                <div class="dropdown-option selected" onclick="selectDropdownOption('dateDropdown', 'today', 'Bugün')">Bugün</div>
-                                                <div class="dropdown-option" onclick="selectDropdownOption('dateDropdown', 'yesterday', 'Dün')">Dün</div>
+                                                <div class="dropdown-option selected" onclick="selectDateAndLoadPosts('today', 'Bugün')">Bugün</div>
+                                                <div class="dropdown-option" onclick="selectDateAndLoadPosts('yesterday', 'Dün')">Dün</div>
                                             </div>
                                         </div>
                                     </div>
-                                    <select id="dateFilter" class="hidden-select" onchange="loadGroupPosts()">
+                                    <select id="dateFilter" class="hidden-select">
                                         <option value="today">Bugün</option>
                                         <option value="yesterday">Dün</option>
                                     </select>
-                                    <button type="button" class="btn btn-sm" onclick="loadGroupPosts()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff;">
+                                    <button type="button" class="btn btn-sm" onclick="loadGroupPostsWithCurrentGroup()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff;">
                                         <i class="fas fa-sync"></i>
                                     </button>
                                 </div>
