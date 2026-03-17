@@ -1,13 +1,15 @@
 let notificationTimeout;
 let pendingUsername = null;
 let pendingButton = null;
+let pendingPostLink = null;
 
-const postLink = document.body.dataset.postLink || "";
-
-function updateCount() {
-    const listItems = document.getElementById("eksiklerListesi").getElementsByTagName("li");
-    const visibleCount = Array.from(listItems).filter((item) => item.style.display !== "none").length;
-    document.getElementById("elemanSayisi").innerText = `Eksik Sayisi: ${visibleCount}`;
+function updateEksiklerCount(index) {
+    const list = document.getElementById(`eksiklerListesi-${index}`);
+    const badge = document.getElementById(`elemanSayisi-${index}`);
+    if (!list || !badge) return;
+    const items = Array.from(list.getElementsByTagName("li"));
+    const visibleCount = items.filter((item) => item.style.display !== "none").length;
+    badge.innerText = `Eksik: ${visibleCount}`;
 }
 
 function showNotification(message) {
@@ -33,22 +35,25 @@ function closeModal() {
     document.getElementById("confirmModal").classList.remove("show");
     pendingUsername = null;
     pendingButton = null;
+    pendingPostLink = null;
 }
 
-function addExemption(username, button) {
+function addExemption(username, postLink, button) {
     pendingUsername = username;
     pendingButton = button;
+    pendingPostLink = postLink;
     document.getElementById("modalUsername").textContent = `@${username}`;
     document.getElementById("confirmModal").classList.add("show");
 }
 
 function confirmExemption() {
-    if (!pendingUsername || !pendingButton) {
+    if (!pendingUsername || !pendingButton || !pendingPostLink) {
         return;
     }
 
     const username = pendingUsername;
     const button = pendingButton;
+    const postLink = pendingPostLink;
     closeModal();
 
     button.disabled = true;
@@ -63,13 +68,18 @@ function confirmExemption() {
         .then((data) => {
             if (data.success) {
                 const listItem = button.closest("li");
+                const parentList = listItem && listItem.parentElement;
+                const listId = parentList && parentList.id;
+                const indexPart = listId ? listId.split("-").pop() : null;
+                const idx = indexPart ? parseInt(indexPart, 10) : null;
+
                 listItem.style.transition = "all 0.3s ease";
                 listItem.style.opacity = "0";
                 listItem.style.transform = "translateX(20px)";
 
                 setTimeout(() => {
                     listItem.remove();
-                    updateCount();
+                    if (idx) updateEksiklerCount(idx);
                     showNotification(`@${username} izinli listesine eklendi!`);
                 }, 300);
                 return;
@@ -106,8 +116,10 @@ function fallbackCopyToClipboard(text, count) {
     document.body.removeChild(textArea);
 }
 
-function kopyalaListeyi() {
-    const listItems = document.getElementById("eksiklerListesi").getElementsByTagName("li");
+function kopyalaListeyiFrom(listElementId, label) {
+    const list = document.getElementById(listElementId);
+    if (!list) return;
+    const listItems = list.getElementsByTagName("li");
     let text = "";
 
     for (let i = 0; i < listItems.length; i += 1) {
@@ -123,7 +135,7 @@ function kopyalaListeyi() {
     const count = listItems.length;
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text)
-            .then(() => showNotification(`Liste kopyalandi! Toplam eksik sayisi: ${count}`))
+            .then(() => showNotification(`Liste kopyalandi! Toplam ${label} sayisi: ${count}`))
             .catch(() => fallbackCopyToClipboard(text, count));
         return;
     }
@@ -131,9 +143,22 @@ function kopyalaListeyi() {
     fallbackCopyToClipboard(text, count);
 }
 
-function filterList() {
-    const input = document.getElementById("searchInput").value.toLowerCase();
-    const listItems = document.getElementById("eksiklerListesi").getElementsByTagName("li");
+function copyEksiklerList(index) {
+    kopyalaListeyiFrom(`eksiklerListesi-${index}`, "eksik");
+}
+
+function copyCompletedList() {
+    kopyalaListeyiFrom("completedList", "tamamlamis kullanici");
+}
+
+function filterEksiklerList(index) {
+    const card = document.querySelector(`.link-card:nth-of-type(${index})`);
+    if (!card) return;
+    const inputEl = card.querySelector(".search-input");
+    const input = inputEl ? inputEl.value.toLowerCase() : "";
+    const list = document.getElementById(`eksiklerListesi-${index}`);
+    if (!list) return;
+    const listItems = list.getElementsByTagName("li");
 
     for (let i = 0; i < listItems.length; i += 1) {
         const item = listItems[i];
@@ -141,15 +166,130 @@ function filterList() {
         item.style.display = textValue.includes(input) ? "" : "none";
     }
 
-    updateCount();
+    updateEksiklerCount(index);
+}
+
+function filterCompletedList() {
+    const input = document.getElementById("completedSearchInput").value.toLowerCase();
+    const list = document.getElementById("completedList");
+    if (!list) return;
+    const listItems = list.getElementsByTagName("li");
+
+    for (let i = 0; i < listItems.length; i += 1) {
+        const item = listItems[i];
+        const textValue = item.innerText.toLowerCase();
+        item.style.display = textValue.includes(input) ? "" : "none";
+    }
 }
 
 window.addExemption = addExemption;
 window.closeModal = closeModal;
 window.confirmExemption = confirmExemption;
-window.kopyalaListeyi = kopyalaListeyi;
-window.filterList = filterList;
+window.copyEksiklerList = copyEksiklerList;
+window.copyCompletedList = copyCompletedList;
+window.filterEksiklerList = filterEksiklerList;
+window.filterCompletedList = filterCompletedList;
+window.toggleCompletedSection = toggleCompletedSection;
+window.toggleEksiklerSection = toggleEksiklerSection;
+window.copyLink = copyLink;
+window.refreshResults = refreshResults;
+
+function toggleCompletedSection() {
+    const section = document.getElementById("completedSection");
+    const icon = document.getElementById("completedSectionIcon");
+    if (section.style.display === "none") {
+        section.style.display = "block";
+        icon.style.transform = "rotate(180deg)";
+    } else {
+        section.style.display = "none";
+        icon.style.transform = "rotate(0deg)";
+    }
+}
+
+function toggleEksiklerSection(index) {
+    const section = document.getElementById(`eksiklerSection-${index}`);
+    const icon = document.getElementById(`eksiklerIcon-${index}`);
+    if (section.style.display === "none") {
+        section.style.display = "block";
+        icon.style.transform = "rotate(180deg)";
+    } else {
+        section.style.display = "none";
+        icon.style.transform = "rotate(0deg)";
+    }
+}
+
+function copyLink(link) {
+    navigator.clipboard.writeText(link).then(() => {
+        showNotification("Link kopyalandi!");
+    }).catch(() => {
+        showNotification("Link kopyalanamadi!");
+    });
+}
+
+function copyUserMissingPosts(username) {
+    const container = document.getElementById('missing-posts-' + username);
+    if (!container) return;
+    
+    const links = [];
+    container.querySelectorAll('a').forEach(a => {
+        links.push(a.textContent);
+    });
+    
+    const text = links.join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+        showNotification("@" + username + " için " + links.length + " link kopyalandı!");
+    }).catch(() => {
+        showNotification("Kopyalama başarısız!");
+    });
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showNotification("Kopyalandı!");
+    }).catch(() => {
+        showNotification("Kopyalama başarısız!");
+    });
+}
+
+function refreshResults() {
+    const links = [];
+    document.querySelectorAll('.eksikler-list').forEach(list => {
+        const postLink = list.dataset.postLink;
+        if (postLink && !links.includes(postLink)) {
+            links.push(postLink);
+        }
+    });
+    
+    const groupUsers = [];
+    document.querySelectorAll('.eksikler-list li').forEach(item => {
+        const username = item.dataset.username;
+        if (username && !groupUsers.includes(username)) {
+            groupUsers.push(username);
+        }
+    });
+    
+    const allCommented = [];
+    document.querySelectorAll('#completedList li').forEach(item => {
+        const username = item.dataset.username;
+        if (username) {
+            allCommented.push(username);
+        }
+    });
+    
+    const allUsers = [...groupUsers, ...allCommented];
+    
+    if (links.length > 0) {
+        const linkParam = encodeURIComponent(links.join('\n'));
+        const groupParam = encodeURIComponent(allUsers.join(' '));
+        window.location.href = `/?refresh=1&link=${linkParam}&group=${groupParam}`;
+    }
+}
 
 window.onload = function onLoad() {
-    updateCount();
+    const lists = document.querySelectorAll(".eksikler-list");
+    lists.forEach((list, idx) => {
+        const indexPart = list.id.split("-").pop();
+        const index = parseInt(indexPart, 10);
+        if (index) updateEksiklerCount(index);
+    });
 };

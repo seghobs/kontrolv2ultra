@@ -194,6 +194,36 @@
             display: flex;
             gap: 10px;
         }
+
+        .mode-toggle-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .mode-toggle-btn {
+            flex: 1;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.85);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mode-toggle-btn.active {
+            background: rgba(120,119,198,0.3);
+            border-color: rgba(120,119,198,0.7);
+            color: #fff;
+        }
+
+        .mode-hint {
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 6px;
+        }
     </style>
 </head>
 <body data-token-error-message='{{ token_error_message|default("", true)|e }}'>
@@ -202,24 +232,74 @@
             <div class="col-12 col-md-10 col-lg-8 col-xl-6">
                 <div class="form-card">
                     <h2><i class="fas fa-comments me-2"></i>Yorum Kontrolleri</h2>
-                    <form method="post" action="/">
+                    <form id="checkForm" method="post" action="/">
                         <div class="mb-3">
-                            <label for="post_link" class="form-label">
-                                <i class="fab fa-instagram me-2"></i>İnstagram Post Linki
+                            <label for="post_link_single" class="form-label">
+                                <i class="fab fa-instagram me-2"></i>İnstagram Post Link(ler)i
                             </label>
-                            <input type="text" id="post_link" name="post_link" class="form-control" 
-                                   placeholder="https://www.instagram.com/p/..." required>
+                            <div class="mode-toggle-group">
+                                <button type="button" id="modeSingle" class="mode-toggle-btn active" onclick="setCheckMode('single')">
+                                    Tekli kontrol
+                                </button>
+                                <button type="button" id="modeMulti" class="mode-toggle-btn" onclick="setCheckMode('multi')">
+                                    Toplu kontrol
+                                </button>
+                            </div>
+                            <div id="modeHint" class="mode-hint">
+                                Tekli kontrol: Tek bir post/reel linki gir.
+                            </div>
+                            <!-- Tekli kontrol: input -->
+                            <input type="text"
+                                   id="post_link_single"
+                                   name="post_link"
+                                   class="form-control"
+                                   placeholder="https://www.instagram.com/p/...">
+                            <!-- Toplu kontrol: textarea (varsayılan gizli) -->
+                            <textarea id="post_link_multi"
+                                      name="post_link"
+                                      class="form-control mt-2"
+                                      style="display:none;"
+                                      placeholder="Her satira bir post/reel linki yazin&#10;https://www.instagram.com/p/...&#10;https://www.instagram.com/reel/..."
+                                      rows="4"></textarea>
                         </div>
                         <div class="mb-3">
                             <label for="grup_uye" class="form-label">
                                 <i class="fas fa-users me-2"></i>Grup Üye Listesi
                             </label>
+                            <div class="mb-2">
+                                <select id="groupSelect" class="form-control" onchange="loadGroupMembers()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+                                    <option value="">-- Instagram Grubu Seç --</option>
+                                </select>
+                            </div>
+                            <div id="groupPostsSection" class="mb-2" style="display: none;">
+                                <div class="d-flex gap-2 mb-2">
+                                    <select id="dateFilter" class="form-control" onchange="loadGroupPosts()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+                                        <option value="today">Bugün</option>
+                                        <option value="yesterday">Dün</option>
+                                    </select>
+                                    <button type="button" class="btn btn-sm" onclick="loadGroupPosts()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff;">
+                                        <i class="fas fa-sync"></i>
+                                    </button>
+                                </div>
+                                <select id="postSelect" class="form-control" onchange="addPostLink()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+                                    <option value="">-- Paylaşım Seç --</option>
+                                </select>
+                                <button type="button" class="btn btn-sm mt-2" onclick="addAllPosts()" style="background: rgba(46, 204, 113, 0.2); border: 1px solid rgba(46, 204, 113, 0.4); color: #2ecc71;">
+                                    <i class="fas fa-plus me-1"></i> Tümünü Ekle
+                                </button>
+                                <style>
+                                    #postSelect option, #dateFilter option {
+                                        background: #1a1a2e;
+                                        color: #fff;
+                                    }
+                                </style>
+                            </div>
                             <textarea id="grup_uye" name="grup_uye" class="form-control" 
                                       placeholder="Her satıra bir kullanıcı adı yazın" 
                                       oninput="updateUserCount()" required></textarea>
                             <span id="user_count">0 Adet kullanıcı eklendi.</span>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100 mb-3">
+                        <button type="submit" id="submitCheckBtn" class="btn btn-primary w-100 mb-3">
                             <i class="fas fa-search me-2"></i>Kontrol Et
                         </button>
                     </form>
@@ -245,8 +325,41 @@
         </div>
     </div>
 
+    <!-- İlerleme overlay -->
+    <div id="progressOverlay" class="modal-overlay" style="display: none;">
+        <div class="modal-card text-center">
+            <div class="modal-title"><i class="fas fa-spinner fa-spin me-2"></i>Yorumlar cekiliyor</div>
+            <div class="modal-text" id="progressText">Link donusturuluyor...</div>
+            <div class="progress mt-2" style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%; background: #7877c6; border-radius: 8px;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/form.js') }}"></script>
+    {% if refresh %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const link = urlParams.get('link') || '';
+            const group = urlParams.get('group') || '';
+            
+            if (link) {
+                document.getElementById('post_link').value = decodeURIComponent(link);
+            }
+            if (group) {
+                document.getElementById('grup_uye').value = decodeURIComponent(group);
+            }
+            
+            if (link) {
+                setTimeout(function() {
+                    document.getElementById('kontrolForm').dispatchEvent(new Event('submit'));
+                }, 500);
+            }
+        });
+    </script>
+    {% endif %}
 </body>
 </html>

@@ -1,9 +1,13 @@
+import logging
 from datetime import datetime
 
 from log_in import giris_yap
+from log_in import LoginError
 
 from app_core.instagram_api import fetch_comment_usernames, fetch_current_user, validate_token
 from app_core.storage import load_tokens, save_tokens
+
+logger = logging.getLogger(__name__)
 
 
 def deactivate_token(tokens, username, reason):
@@ -12,6 +16,7 @@ def deactivate_token(tokens, username, reason):
             token["is_active"] = False
             token["logout_reason"] = reason
             token["logout_time"] = str(datetime.now())
+            logger.info("Token pasife alindi: @%s — %s", username, reason)
             return True
     return False
 
@@ -21,12 +26,11 @@ def clear_logout_state(token):
     token.pop("logout_time", None)
 
 
-def get_working_active_token(excluded_usernames=None):
+def get_working_active_token(excluded_usernames=None, skip_validation=False):
     if excluded_usernames is None:
         excluded_usernames = set()
 
     tokens = load_tokens()
-    changed = False
 
     for token_record in tokens:
         if not token_record.get("is_active", False):
@@ -42,30 +46,14 @@ def get_working_active_token(excluded_usernames=None):
         token_value = token_record.get("token", "").strip()
 
         if not android_id or not user_agent or not device_id or not token_value:
-            changed = deactivate_token(
-                tokens,
-                username,
-                "Bu hesapta zorunlu bilgiler eksik (token/android_id/user_agent/device_id)",
-            ) or changed
             continue
 
-        if validate_token(token_record):
-            if changed:
-                save_tokens(tokens)
-            return token_record
+        return token_record
 
-        changed = deactivate_token(
-            tokens,
-            username,
-            "Bu hesabin oturumu Instagram'dan cikis yapildi",
-        ) or changed
-
-    if changed:
-        save_tokens(tokens)
     return None
 
 
-def fetch_comments_with_failover(media_id):
+def fetch_comments_with_failover(media_id, progress_callback=None):
     max_retries = 10
     retry_count = 0
     tried_usernames = set()
@@ -77,19 +65,22 @@ def fetch_comments_with_failover(media_id):
             return set()
 
         current_username = token_record.get("username", "bilinmeyen")
-        print(f"Token kullaniliyor: @{current_username}")
+        logger.info("Token kullaniliyor: @%s", current_username)
 
         try:
-            result = fetch_comment_usernames(media_id, token_record)
+            result = fetch_comment_usernames(media_id, token_record, progress_callback=progress_callback)
         except Exception as error:
-            print(f"Yorum cekme hatasi: {error}")
+            logger.error("Yorum cekme hatasi: %s", error)
             result = {"ok": False, "status": 500, "usernames": usernames}
 
         usernames = result.get("usernames", set())
 
         if result.get("ok"):
-            print(f"Basari! Toplam {len(usernames)} kullanici bulundu.")
+            logger.info("Basari! Toplam %d kullanici bulundu.", len(usernames))
             return usernames
+
+        if result.get("rate_limited"):
+            return {"rate_limited": True, "usernames": usernames}
 
         tokens = load_tokens()
         deactivate_token(tokens, current_username, "Bu hesabin oturumu Instagram'dan cikis yapildi")
@@ -105,10 +96,14 @@ def fetch_comments_with_failover(media_id):
 
 
 def resolve_current_user(token, user_agent, android_id, device_id):
-    response = fetch_current_user(token, user_agent, android_id, device_id, timeout=5)
-    if response.status_code != 200:
+    try:
+        response = fetch_current_user(token, user_agent, android_id, device_id, timeout=5)
+        if response.status_code != 200:
+            return None
+        return response.json().get("user", {})
+    except Exception as error:
+        logger.warning("Kullanici bilgisi alinamadi: %s", error)
         return None
-    return response.json().get("user", {})
 
 
 def upsert_login_token(username, password, token, android_id, user_agent, device_id):
@@ -140,40 +135,68 @@ def upsert_login_token(username, password, token, android_id, user_agent, device
         )
 
     save_tokens(tokens)
+    logger.info("Token kaydedildi: @%s", username)
 
 
-def relogin_saved_user(username):
+def relogin_saved_user(username, password_override=None, device_id_override=None, user_agent_override=None, android_id_override=None):
     tokens = load_tokens()
     target = next((item for item in tokens if item.get("username") == username), None)
     if not target:
         return {"ok": False, "code": 404, "message": "Token bulunamadi"}
 
-    required = [
-        str(target.get("password", "")).strip(),
-        str(target.get("android_id_yeni", "")).strip(),
-        str(target.get("user_agent", "")).strip(),
-        str(target.get("device_id", "")).strip(),
-    ]
-    if not all(required):
-        return {"ok": False, "code": 400, "message": "Bu hesap icin zorunlu bilgiler eksik"}
+    stored_password = str(target.get("password", "")).strip()
+    stored_android = str(target.get("android_id_yeni", "")).strip()
+    stored_user_agent = str(target.get("user_agent", "")).strip()
+    stored_device_id = str(target.get("device_id", "")).strip()
 
-    new_token, new_android_id, new_user_agent, new_device_id = giris_yap(
-        username,
-        target["password"],
-        target["android_id_yeni"],
-        target["user_agent"],
-        target["device_id"],
-    )
+    password = (password_override or "").strip() or stored_password
+    android_id = (android_id_override or "").strip() or stored_android
+    user_agent = (user_agent_override or "").strip() or stored_user_agent
+    device_id = (device_id_override or "").strip() or stored_device_id
+
+    missing = []
+    if not password:
+        missing.append("password")
+    if not android_id:
+        missing.append("android_id")
+    if not user_agent:
+        missing.append("user_agent")
+    if not device_id:
+        missing.append("device_id")
+    if missing:
+        labels = {"password": "Sifre", "android_id": "Android ID", "user_agent": "User Agent", "device_id": "Device ID"}
+        msg = "Eksik alanlar: " + ", ".join(labels.get(k, k) for k in missing) + ". Lutfen girin."
+        return {"ok": False, "code": "FIELDS_REQUIRED", "missing": missing, "message": msg}
+
+    try:
+        new_token, new_android_id, new_user_agent, new_device_id = giris_yap(
+            username,
+            password,
+            android_id,
+            user_agent,
+            device_id,
+        )
+    except LoginError as error:
+        logger.error("Giriş hatası: %s | Tip: %s", error.message, error.error_type)
+        return {
+            "ok": False,
+            "code": error.status_code or 400,
+            "message": error.message,
+            "error_type": error.error_type,
+            "details": error.details,
+        }
 
     if not new_token:
-        return {"ok": False, "code": 400, "message": "Giris basarisiz"}
+        return {"ok": False, "code": 400, "message": "Giris basarisiz - token alinamadi"}
 
     target["token"] = new_token
     target["android_id_yeni"] = new_android_id
     target["user_agent"] = new_user_agent
     target["device_id"] = new_device_id
+    target["password"] = password
     target["is_active"] = True
     clear_logout_state(target)
     save_tokens(tokens)
 
+    logger.info("Token yenilendi: @%s", username)
     return {"ok": True, "message": f"@{username} icin token basariyla yenilendi"}

@@ -119,7 +119,7 @@
             background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
-            padding: 14px 28px;
+            padding: 14px;
             font-weight: 600;
             color: #fff;
             transition: all 0.3s ease;
@@ -309,45 +309,148 @@
             white-space: nowrap;
             min-width: 0;
         }
+        .completed-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #6ee7b7;
+            font-size: 12px;
+            margin-left: 8px;
+        }
     </style>
 </head>
-<body data-post-link='{{ post_link|e }}'>
+<body data-rate-limited='{{ "true" if rate_limited else "false" }}'>
+    {% if rate_limited %}
+    <div class="alert alert-warning text-center mx-3 mt-3" style="background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); color: #fbbf24; border-radius: 12px;">
+        <i class="fas fa-clock me-2"></i>Çok fazla istek; Instagram gecici sinir koydu. Lutfen 10–15 dakika bekleyip tekrar deneyin.
+    </div>
+    {% endif %}
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-12 col-lg-8 col-xl-7">
                 <div class="result-card">
                     <div class="text-center mb-4">
                         <h1 class="mb-3">
-                            <i class="fas fa-user-minus me-2"></i>Eksikler
+                            <i class="fas fa-user-minus me-2"></i>Yorum Durumu Özeti
                         </h1>
-                        <span id="elemanSayisi" class="d-block mb-3"></span>
-                        
-                        <!-- Arama Girişi -->
-                        <div class="search-container mb-3">
-                            <i class="fas fa-search search-icon"></i>
-                            <input type="text" id="searchInput" placeholder="Kullanıcı adı ara..." 
-                                   class="search-input" onkeyup="filterList()">
+                    </div>
+
+                    {% if all_commented and all_commented|length > 0 %}
+                    <div class="mb-4">
+                        <div class="completed-section-header" onclick="toggleCompletedSection()" style="cursor: pointer; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                            <h5 class="mb-0" style="color: #fff; display: flex; align-items: center; justify-content: space-between;">
+                                <span>
+                                    <i class="fas fa-user-check me-2"></i>Tamamlamış Kullanıcılar
+                                    <span class="completed-badge">{{ all_commented|length }} kisi</span>
+                                </span>
+                                <i id="completedSectionIcon" class="fas fa-chevron-down" style="color: #fff; transition: transform 0.3s;"></i>
+                            </h5>
                         </div>
-                        
-                        <button class="btn btn-primary" onclick="kopyalaListeyi()">
-                            <i class="fas fa-copy me-2"></i>Listeyi Kopyala
-                        </button>
+                        <div id="completedSection" style="display: none; margin-top: 15px;">
+                            <div class="search-container mb-3">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="text" id="completedSearchInput" placeholder="Kullanıcı adı ara..." 
+                                       class="search-input" onkeyup="filterCompletedList()">
+                            </div>
+                            <button class="btn btn-primary mb-3" onclick="copyCompletedList()">
+                                <i class="fas fa-copy me-2"></i>Tamamlamış Listeyi Kopyala
+                            </button>
+                            <ul class="list-group list-group-flush" id="completedList">
+                                {% for user in all_commented %}
+                                <li class="list-group-item" data-username="{{ user }}">
+                                    <span class="username-text">
+                                        <i class="fas fa-user-check me-2"></i><strong>{{ user }}</strong>
+                                    </span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-4">
+                        {% for item in links %}
+                        <div class="mb-4 link-card">
+                            <div class="eksikler-section-header" onclick="toggleEksiklerSection({{ loop.index }})" style="cursor: pointer; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong style="color: #fff;">Eksikler</strong>
+                                        <a href="{{ item.post_link }}" target="_blank" onclick="event.stopPropagation(); copyLink('{{ item.post_link }}')" style="color: #93c5fd; text-decoration: none; margin-left: 10px;" title="Linki kopyala">
+                                            <i class="fas fa-link"></i>
+                                        </a>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span id="elemanSayisi-{{ loop.index }}" class="badge bg-secondary"></span>
+                                        <i id="eksiklerIcon-{{ loop.index }}" class="fas fa-chevron-down" style="color: #fff;"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="eksiklerSection-{{ loop.index }}" style="display: none; margin-top: 15px;">
+                                <div class="search-container mb-3">
+                                    <i class="fas fa-search search-icon"></i>
+                                    <input type="text" placeholder="Bu link icin kullanıcı ara..." 
+                                           class="search-input" onkeyup="filterEksiklerList({{ loop.index }})">
+                                </div>
+
+                                <button class="btn btn-primary mb-3" onclick="copyEksiklerList({{ loop.index }})">
+                                    <i class="fas fa-copy me-2"></i>Bu Link icin Eksikleri Kopyala
+                                </button>
+
+                                <ul class="list-group list-group-flush eksikler-list"
+                                    id="eksiklerListesi-{{ loop.index }}"
+                                    data-post-link="{{ item.post_link }}">
+                                    {% for eksik in item.eksikler %}
+                                    <li class="list-group-item" data-username="{{ eksik }}">
+                                        <span class="username-text">
+                                            <i class="fas fa-user me-2"></i><strong>{{ eksik }}</strong>
+                                        </span>
+                                        <button class="btn btn-exemption" onclick="addExemption('{{ eksik }}', '{{ item.post_link|e }}', this)">
+                                            <i class="fas fa-check me-1"></i>İzinli Say
+                                        </button>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                     
-                    <div class="mt-4">
-                        <ul class="list-group list-group-flush" id="eksiklerListesi">
-                            {% for eksik in eksikler %}
-                            <li class="list-group-item" data-username="{{ eksik }}">
-                                <span class="username-text">
-                                    <i class="fas fa-user me-2"></i><strong>{{ eksik }}</strong>
-                                </span>
-                                <button class="btn btn-exemption" onclick="addExemption('{{ eksik }}', this)">
-                                    <i class="fas fa-check me-1"></i>İzinli Say
+                    {% if user_missing_posts %}
+                    <div class="mt-4" style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                        <h5 style="color: #fff; margin-bottom: 15px;">
+                            <i class="fas fa-user-times me-2"></i>Eksik Kullanıcı Detaylı Rapor
+                        </h5>
+                        <p style="color: rgba(255,255,255,0.6); font-size: 13px; margin-bottom: 15px;">
+                            Aşağıda her eksik kullanıcının hangi postlarda eksik olduğu gösterilmektedir.
+                        </p>
+                        {% for username, posts in user_missing_posts.items() %}
+                        <div class="mb-3" style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong style="color: #e74c3c;">
+                                    <i class="fas fa-user me-1"></i>@{{ username }}
+                                    <span style="color: rgba(255,255,255,0.5); font-weight: normal;">({{ posts|length }} eksik)</span>
+                                </strong>
+                                <button class="btn btn-sm" onclick="copyUserMissingPosts('{{ username }}')" 
+                                        style="background: rgba(46, 204, 113, 0.2); border: 1px solid rgba(46, 204, 113, 0.4); color: #2ecc71;">
+                                    <i class="fas fa-copy me-1"></i>Tüm Linkleri Kopyala
                                 </button>
-                            </li>
-                            {% endfor %}
-                        </ul>
+                            </div>
+                            <div id="missing-posts-{{ username }}" style="font-size: 12px; color: rgba(255,255,255,0.7);">
+                                {% for post in posts %}
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <a href="{{ post }}" target="_blank" style="color: #93c5fd;">{{ post }}</a>
+                                    <i class="fas fa-link" style="cursor: pointer; color: rgba(255,255,255,0.5);" 
+                                       onclick="copyToClipboard('{{ post }}')" title="Kopyala"></i>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

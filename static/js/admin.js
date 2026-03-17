@@ -1,10 +1,22 @@
+function escapeHtml(text) {
+    if (!text) return "";
+    const map = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;",
+    };
+    return String(text).replace(/[&<>"']/g, (m) => map[m]);
+}
+
 function showAlert(message, type = "success") {
     const alertContainer = document.getElementById("alertContainer");
     const alert = document.createElement("div");
     alert.className = `alert alert-${type}`;
 
     const icon = type === "success" ? "check-circle" : type === "error" ? "exclamation-triangle" : "info-circle";
-    alert.innerHTML = `<i class="fas fa-${icon}"></i><span>${message}</span>`;
+    alert.innerHTML = `<i class="fas fa-${icon}"></i><span>${escapeHtml(message)}</span>`;
     alertContainer.appendChild(alert);
 
     setTimeout(() => {
@@ -12,21 +24,99 @@ function showAlert(message, type = "success") {
     }, 5000);
 }
 
-function toggleExemptionsPanel() {
-    const body = document.getElementById("exemptionsSectionBody");
-    const button = document.getElementById("toggleExemptionsBtn");
+function toggleAddTokenPanel() {
+    const body = document.getElementById("addTokenBody");
+    const header = document.getElementById("addTokenHeader");
     const isCollapsed = body.classList.contains("collapsed");
 
     if (isCollapsed) {
         body.classList.remove("collapsed");
-        button.innerHTML = '<i class="fas fa-chevron-up"></i> Kapat';
+        header.classList.add("open");
+    } else {
+        body.classList.add("collapsed");
+        header.classList.remove("open");
+    }
+}
+
+function toggleTokensListPanel() {
+    const body = document.getElementById("tokensListBody");
+    const header = document.getElementById("tokensListHeader");
+    const isCollapsed = body.classList.contains("collapsed");
+
+    if (isCollapsed) {
+        body.classList.remove("collapsed");
+        header.classList.add("open");
+        if (!body.dataset.loaded) {
+            loadTokens();
+            body.dataset.loaded = "true";
+        }
+    } else {
+        body.classList.add("collapsed");
+        header.classList.remove("open");
+    }
+}
+
+function toggleExemptionsPanel() {
+    const body = document.getElementById("exemptionsSectionBody");
+    const header = document.getElementById("exemptionsHeader");
+    const isCollapsed = body.classList.contains("collapsed");
+
+    if (isCollapsed) {
+        body.classList.remove("collapsed");
+        header.classList.add("open");
         if (!body.dataset.loaded) {
             loadExemptions();
             body.dataset.loaded = "true";
         }
     } else {
         body.classList.add("collapsed");
-        button.innerHTML = '<i class="fas fa-chevron-down"></i> Aç';
+        header.classList.remove("open");
+    }
+}
+
+function toggleAuditPanel() {
+    const body = document.getElementById("auditBody");
+    const header = document.getElementById("auditHeader");
+    const chevron = document.getElementById("auditChevron");
+    if (!body || !header) return;
+    const isCollapsed = body.classList.contains("collapsed");
+    if (isCollapsed) {
+        body.classList.remove("collapsed");
+        header.classList.add("open");
+        if (!body.dataset.loaded) {
+            loadAuditLogs();
+            body.dataset.loaded = "true";
+        }
+    } else {
+        body.classList.add("collapsed");
+        header.classList.remove("open");
+    }
+}
+
+async function loadAuditLogs() {
+    const loading = document.getElementById("auditLoading");
+    const list = document.getElementById("auditList");
+    if (!list) return;
+    if (loading) loading.classList.add("show");
+    list.innerHTML = "";
+    try {
+        const r = await fetch("/admin/get_audit_logs?limit=100");
+        const d = await r.json();
+        if (loading) loading.classList.remove("show");
+        if (!d.success || !d.logs || d.logs.length === 0) {
+            list.innerHTML = '<div class="empty-state" style="padding: 20px;"><i class="fas fa-history"></i><p>Islem kaydi yok.</p></div>';
+            return;
+        }
+        d.logs.forEach((log) => {
+            const div = document.createElement("div");
+            div.style.cssText = "padding: 10px 12px; margin-bottom: 8px; background: rgba(255,255,255,0.05); border-radius: 8px; font-size: 13px; border: 1px solid rgba(255,255,255,0.08);";
+            const actionLabel = { token_eklendi: "Token eklendi", token_guncellendi: "Token guncellendi", token_silindi: "Token silindi", token_geri_alindi: "Token geri alindi", relogin_basarili: "Tekrar giris" }[log.action] || log.action;
+            div.innerHTML = "<strong>" + escapeHtml(log.entity_id) + "</strong> – " + escapeHtml(actionLabel) + (log.details ? " – " + escapeHtml(log.details) : "") + " <span style=\"color: rgba(255,255,255,0.5); font-size: 12px;\">" + escapeHtml(log.created_at) + "</span>";
+            list.appendChild(div);
+        });
+    } catch (e) {
+        if (loading) loading.classList.remove("show");
+        list.innerHTML = '<div class="empty-state" style="padding: 20px;"><p>Yuklenemedi.</p></div>';
     }
 }
 
@@ -42,31 +132,46 @@ async function postJson(url, payload) {
 async function loadExemptions() {
     const loading = document.getElementById("exemptionsLoading");
     const list = document.getElementById("exemptionsList");
-
     loading.classList.add("show");
     list.innerHTML = "";
 
+    const search = document.getElementById("exemptionSearch") ? document.getElementById("exemptionSearch").value.trim() : "";
+    const pageSize = document.getElementById("exemptionPageSize") ? parseInt(document.getElementById("exemptionPageSize").value, 10) : 25;
+    const url = new URL("/admin/get_exemptions", window.location.origin);
+    if (search) url.searchParams.set("search", search);
+    url.searchParams.set("page", String(_exemptionPage));
+    url.searchParams.set("page_size", String(pageSize));
+
     try {
-        const response = await fetch("/admin/get_exemptions");
+        const response = await fetch(url.toString());
         const data = await response.json();
 
         loading.classList.remove("show");
-        if (!data.success) {
-            throw new Error(data.message || "Izinli liste yuklenemedi");
-        }
+        if (!data.success) throw new Error(data.message || "Izinli liste yuklenemedi");
 
-        if (!data.groups || data.groups.length === 0) {
-            list.innerHTML = '<div class="empty-state" style="padding: 25px 10px;"><i class="fas fa-user-slash"></i><p>Henuz izinli kullanici kaydi yok.</p></div>';
+        _exemptionTotal = data.total || 0;
+        _exemptionTotalGroups = data.total_groups || 0;
+        const groups = data.groups || [];
+        const totalPages = pageSize ? Math.max(1, Math.ceil(_exemptionTotalGroups / pageSize)) : 1;
+        const paginationInfo = document.getElementById("exemptionPaginationInfo");
+        if (paginationInfo) paginationInfo.textContent = _exemptionTotalGroups + " link, " + _exemptionTotal + " kullanici, sayfa " + _exemptionPage + " / " + totalPages;
+        const prevBtn = document.getElementById("exemptionPrevPage");
+        const nextBtn = document.getElementById("exemptionNextPage");
+        if (prevBtn) prevBtn.disabled = _exemptionPage <= 1;
+        if (nextBtn) nextBtn.disabled = _exemptionPage >= totalPages;
+
+        if (groups.length === 0) {
+            list.innerHTML = '<div class="empty-state" style="padding: 25px 10px;"><i class="fas fa-user-slash"></i><p>Kayit yok.</p></div>';
             return;
         }
 
-        data.groups.forEach((group) => {
+        groups.forEach((group) => {
             const card = document.createElement("div");
             card.className = "exemption-card";
 
             const link = document.createElement("div");
             link.className = "exemption-link";
-            link.innerHTML = `<strong>Link:</strong> ${group.post_link}`;
+            link.innerHTML = `<strong>Link:</strong> ${escapeHtml(group.post_link)}`;
             card.appendChild(link);
 
             const users = document.createElement("div");
@@ -99,7 +204,7 @@ async function loadExemptions() {
             const removeAllBtn = document.createElement("button");
             removeAllBtn.type = "button";
             removeAllBtn.className = "btn btn-danger";
-            removeAllBtn.innerHTML = `<i class=\"fas fa-trash\"></i> Linkteki Tum Izinlileri Sil (${group.count})`;
+            removeAllBtn.innerHTML = `<i class="fas fa-trash"></i> Linkteki Tum Izinlileri Sil (${group.count})`;
             removeAllBtn.addEventListener("click", () => removeExemptionsByLink(group.post_link));
 
             actions.appendChild(removeAllBtn);
@@ -157,30 +262,211 @@ async function removeExemptionsByLink(postLink) {
     }
 }
 
+function toggleGlobalExemptionPanel() {
+    const body = document.getElementById("globalExemptionBody");
+    const header = document.getElementById("globalExemptionHeader");
+    const chevron = document.getElementById("globalExemptionChevron");
+    if (!body || !header || !chevron) return;
+    body.classList.toggle("collapsed");
+    chevron.classList.toggle("rotated");
+    if (!body.classList.contains("collapsed")) {
+        loadGlobalExemptions();
+    }
+}
+
+async function loadGlobalExemptions() {
+    const loading = document.getElementById("globalExemptionsLoading");
+    const list = document.getElementById("globalExemptionsList");
+    const countEl = document.getElementById("globalExemptionCount");
+    
+    if (!loading || !list) return;
+    
+    loading.style.display = "flex";
+    list.innerHTML = "";
+    
+    try {
+        const r = await fetch("/admin/get_global_exemptions");
+        const data = await r.json();
+        
+        loading.style.display = "none";
+        
+        if (!data.success) {
+            showAlert(data.message || "Yukleme basarisiz", "error");
+            return;
+        }
+        
+        const exemptions = data.exemptions || [];
+        
+        if (countEl) {
+            countEl.textContent = `(${exemptions.length} kullanici)`;
+        }
+        
+        if (exemptions.length === 0) {
+            list.innerHTML = '<p style="color: rgba(255,255,255,0.5);">Muaf kullanici yok</p>';
+            return;
+        }
+        
+        exemptions.forEach(ex => {
+            const chip = document.createElement("div");
+            chip.className = "exemption-chip";
+            chip.style.background = "rgba(46, 204, 113, 0.2)";
+            chip.style.border = "1px solid rgba(46, 204, 113, 0.4)";
+            chip.style.padding = "6px 12px";
+            chip.style.borderRadius = "20px";
+            chip.style.display = "inline-flex";
+            chip.style.alignItems = "center";
+            chip.style.gap = "8px";
+            chip.style.color = "#2ecc71";
+            chip.style.fontSize = "14px";
+            
+            chip.innerHTML = `
+                <i class="fas fa-shield-alt"></i>
+                <span>@${escapeHtml(ex.username)}</span>
+                <i class="fas fa-times" style="cursor: pointer; opacity: 0.7;" onclick="removeGlobalExemption('${escapeHtml(ex.username)}')"></i>
+            `;
+            list.appendChild(chip);
+        });
+    } catch (error) {
+        loading.style.display = "none";
+        showAlert(`Yukleme hatasi: ${error.message}`, "error");
+    }
+}
+
+async function addGlobalExemption() {
+    const input = document.getElementById("global_exemption_username");
+    const username = input.value.trim().replace(/^@+/, "");
+    
+    if (!username) {
+        showAlert("Kullanici adi gerekli", "error");
+        return;
+    }
+    
+    try {
+        const data = await postJson("/admin/add_global_exemption", { username });
+        if (!data.success) {
+            showAlert(data.message || "Eklenemedi", "error");
+            return;
+        }
+        showAlert(data.message, "success");
+        input.value = "";
+        loadGlobalExemptions();
+    } catch (error) {
+        showAlert(`Bir hata olustu: ${error.message}`, "error");
+    }
+}
+
+async function removeGlobalExemption(username) {
+    try {
+        const data = await postJson("/admin/remove_global_exemption", { username });
+        if (!data.success) {
+            showAlert(data.message || "Silinemedi", "error");
+            return;
+        }
+        showAlert(data.message, "success");
+        loadGlobalExemptions();
+    } catch (error) {
+        showAlert(`Bir hata olustu: ${error.message}`, "error");
+    }
+}
+
+let _showHidden = false;
+let _tokenPage = 1;
+let _tokenPageSize = 25;
+let _tokenTotal = 0;
+let _exemptionPage = 1;
+let _exemptionPageSize = 25;
+let _exemptionTotal = 0;
+let _exemptionTotalGroups = 0;
+
+async function loadStats() {
+    try {
+        const r = await fetch("/admin/get_stats");
+        const d = await r.json();
+        if (!d.success) return;
+        document.getElementById("statTotal").textContent = d.total_tokens ?? 0;
+        document.getElementById("statActive").textContent = d.active_tokens ?? 0;
+        document.getElementById("statInactive").textContent = d.inactive_tokens ?? 0;
+        document.getElementById("statDeleted").textContent = d.deleted_tokens ?? 0;
+        document.getElementById("statRelogin").textContent = d.relogin_last_7_days ?? 0;
+    } catch (e) {}
+}
+
+function toggleHiddenTokens() {
+    _showHidden = !_showHidden;
+    const btn = document.getElementById("showHiddenBtn");
+    const textEl = document.getElementById("showHiddenText");
+    const iconEl = btn.querySelector("i");
+    if (_showHidden) {
+        btn.classList.add("active");
+        textEl.textContent = "Gizlenenleri Gizle";
+        iconEl.className = "fas fa-eye";
+    } else {
+        btn.classList.remove("active");
+        textEl.textContent = "Gizlenenleri G\u00f6r";
+        iconEl.className = "fas fa-eye-slash";
+    }
+    _tokenPage = 1;
+    loadTokens();
+}
+
 async function loadTokens() {
     const loading = document.getElementById("loading");
     const tokensList = document.getElementById("tokensList");
-
     loading.classList.add("show");
     tokensList.innerHTML = "";
 
+    const search = document.getElementById("tokenSearch") ? document.getElementById("tokenSearch").value.trim() : "";
+    const pageSize = document.getElementById("tokenPageSize") ? parseInt(document.getElementById("tokenPageSize").value, 10) : 25;
+    const url = new URL("/admin/get_tokens", window.location.origin);
+    // Her zaman tum kayitlari cek (silinen + pasif), ekranda filtrele
+    url.searchParams.set("include_deleted", "true");
+    if (search) url.searchParams.set("search", search);
+    url.searchParams.set("page", String(_tokenPage));
+    url.searchParams.set("page_size", String(pageSize));
+
     try {
-        const response = await fetch("/admin/get_tokens");
+        const response = await fetch(url.toString());
         const data = await response.json();
-        if (!data.success) {
-            throw new Error(data.message || "Token yuklenemedi");
-        }
+        if (!data.success) throw new Error(data.message || "Token yuklenemedi");
 
         loading.classList.remove("show");
-        if (data.tokens.length === 0) {
-            tokensList.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Henuz eklenmis token yok.<br>Yukaridaki formu kullanarak token ekleyin.</p></div>';
+        const tokens = data.tokens || [];
+        // Varsayilan: sadece aktif (gizlenmeyen) tokenlar
+        const visibleTokens = tokens.filter((t) => t.is_active);
+        const hiddenTokens = tokens.filter((t) => !t.is_active || t.deleted_at);
+
+        _tokenTotal = visibleTokens.length;
+
+        const totalPages = pageSize ? Math.max(1, Math.ceil(_tokenTotal / pageSize)) : 1;
+        const paginationInfo = document.getElementById("tokenPaginationInfo");
+        if (paginationInfo) paginationInfo.textContent = _tokenTotal + " token, sayfa " + _tokenPage + " / " + totalPages;
+        const prevBtn = document.getElementById("tokenPrevPage");
+        const nextBtn = document.getElementById("tokenNextPage");
+        if (prevBtn) prevBtn.disabled = _tokenPage <= 1;
+        if (nextBtn) nextBtn.disabled = _tokenPage >= totalPages;
+
+        const deletedCount = hiddenTokens.length;
+        const hiddenBtn = document.getElementById("showHiddenBtn");
+        const hiddenCountEl = document.getElementById("hiddenCount");
+        if (hiddenBtn && hiddenCountEl) {
+            if (deletedCount > 0) {
+                hiddenBtn.classList.add("visible");
+                hiddenCountEl.textContent = deletedCount;
+            } else {
+                hiddenBtn.classList.remove("visible");
+            }
+        }
+
+        if (visibleTokens.length === 0 && (!_showHidden || hiddenTokens.length === 0)) {
+            tokensList.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Token bulunamadi.</p></div>';
             return;
         }
 
-        data.tokens.forEach((token, index) => {
-            const tokenCard = createTokenCard(token, index);
-            tokensList.appendChild(tokenCard);
-        });
+        visibleTokens.forEach((token) => tokensList.appendChild(createTokenCard(token)));
+
+        if (_showHidden && hiddenTokens.length > 0) {
+            hiddenTokens.forEach((token) => tokensList.appendChild(createTokenCard(token)));
+        }
     } catch (error) {
         loading.classList.remove("show");
         showAlert(error.message, "error");
@@ -191,21 +477,80 @@ function createTokenCard(token) {
     const card = document.createElement("div");
     card.className = `token-card ${token.is_active ? "" : "inactive"}`;
 
+    const safeUsername = escapeHtml(token.username);
+    const safeFullName = escapeHtml(token.full_name);
     const safeTokenValue = typeof token.token === "string" ? token.token : "";
-    const tokenPreview = safeTokenValue ? `${safeTokenValue.substring(0, 60)}...` : "Token yok";
-    const safeAndroidId = token.android_id_yeni || "Yok";
-    const safeDeviceId = token.device_id || "Yok";
+    const tokenPreview = safeTokenValue ? escapeHtml(`${safeTokenValue.substring(0, 60)}...`) : "Token yok";
+    const safeAndroidId = escapeHtml(token.android_id_yeni || "Yok");
+    const safeDeviceId = escapeHtml(token.device_id || "Yok");
+    const safeLogoutReason = escapeHtml(token.logout_reason);
 
     const statusText = token.is_active ? "Aktif" : "Pasif";
     const statusClass = token.is_active ? "active" : "inactive";
-    const fullNameDisplay = token.full_name ? `<div style="color: rgba(255, 255, 255, 0.6); font-size: 14px; margin-top: 5px;">${token.full_name}</div>` : "";
+    const fullNameDisplay = token.full_name ? `<div style="color: rgba(255, 255, 255, 0.6); font-size: 14px; margin-top: 5px;">${safeFullName}</div>` : "";
     const logoutReasonDisplay = token.logout_reason
-        ? `<div style="background: rgba(231, 76, 60, 0.15); border: 1px solid rgba(231, 76, 60, 0.3); border-radius: 8px; padding: 12px; margin: 10px 0;"><div style="color: #e74c3c; font-weight: 600; font-size: 13px; margin-bottom: 5px;"><i class="fas fa-exclamation-circle"></i> Cikis Yapildi</div><div style="color: rgba(255, 255, 255, 0.8); font-size: 12px;">${token.logout_reason}</div>${token.logout_time ? `<div style="color: rgba(255, 255, 255, 0.5); font-size: 11px; margin-top: 5px;">${new Date(token.logout_time).toLocaleString("tr-TR")}</div>` : ""}</div>`
+        ? `<div style="background: rgba(231, 76, 60, 0.15); border: 1px solid rgba(231, 76, 60, 0.3); border-radius: 8px; padding: 12px; margin: 10px 0;"><div style="color: #e74c3c; font-weight: 600; font-size: 13px; margin-bottom: 5px;"><i class="fas fa-exclamation-circle"></i> Cikis Yapildi</div><div style="color: rgba(255, 255, 255, 0.8); font-size: 12px;">${safeLogoutReason}</div>${token.logout_time ? `<div style="color: rgba(255, 255, 255, 0.5); font-size: 11px; margin-top: 5px;">${escapeHtml(new Date(token.logout_time).toLocaleString("tr-TR"))}</div>` : ""}</div>`
         : "";
 
-    card.innerHTML = `<div class="token-header"><div><span class="token-username"><i class="fab fa-instagram"></i> @${token.username}</span>${fullNameDisplay}</div><span class="token-status ${statusClass}">${statusText}</span></div>${logoutReasonDisplay}<div class="token-info"><strong>Token:</strong><div class="token-value">${tokenPreview}</div></div><div class="token-info"><strong>Android ID:</strong> <span class="token-value" style="display: inline-block;">${safeAndroidId}</span></div><div class="token-info"><strong>Device ID:</strong> <span class="token-value" style="display: inline-block;">${safeDeviceId}</span></div><div class="token-info"><strong>Eklenme Tarihi:</strong> ${token.added_at ? new Date(token.added_at).toLocaleString("tr-TR") : "Bilinmiyor"}</div><div class="token-actions"><button class="btn" onclick="editToken('${token.username}')"><i class="fas fa-edit"></i> Duzenle</button>${token.password ? `<button class="btn" style="background: rgba(52, 152, 219, 0.2); border-color: rgba(52, 152, 219, 0.4);" onclick="reloginToken('${token.username}')"><i class="fas fa-sync-alt"></i> Tekrar Giris Yap</button>` : ""}<button class="btn btn-warning" onclick="toggleToken('${token.username}')"><i class="fas fa-toggle-${token.is_active ? "off" : "on"}"></i> ${token.is_active ? "Pasif Yap" : "Aktif Yap"}</button><button class="btn btn-success" onclick="validateToken('${token.username}')"><i class="fas fa-check-circle"></i> Dogrula</button><button class="btn btn-danger" onclick="deleteToken('${token.username}')"><i class="fas fa-trash"></i> Sil</button></div>`;
+    card.innerHTML = `<div class="token-header"><div><span class="token-username"><i class="fab fa-instagram"></i> @${safeUsername}</span>${fullNameDisplay}</div><span class="token-status ${statusClass}">${statusText}</span></div>${logoutReasonDisplay}<div class="token-info"><strong>Token:</strong><div class="token-value">${tokenPreview}</div></div><div class="token-info"><strong>Android ID:</strong> <span class="token-value" style="display: inline-block;">${safeAndroidId}</span></div><div class="token-info"><strong>Device ID:</strong> <span class="token-value" style="display: inline-block;">${safeDeviceId}</span></div><div class="token-info"><strong>Eklenme Tarihi:</strong> ${token.added_at ? escapeHtml(new Date(token.added_at).toLocaleString("tr-TR")) : "Bilinmiyor"}</div><div class="token-actions"></div>`;
+
+    const actionsDiv = card.querySelector(".token-actions");
+
+    const editBtn = document.createElement("button");
+    editBtn.className = "btn";
+    editBtn.innerHTML = '<i class="fas fa-edit"></i> Duzenle';
+    editBtn.addEventListener("click", () => editToken(token.username));
+    actionsDiv.appendChild(editBtn);
+
+    const reloginBtn = document.createElement("button");
+    reloginBtn.className = "btn";
+    reloginBtn.style.cssText = "background: rgba(52, 152, 219, 0.2); border-color: rgba(52, 152, 219, 0.4);";
+    reloginBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Tekrar Giris Yap';
+    reloginBtn.addEventListener("click", () => reloginToken(token.username));
+    actionsDiv.appendChild(reloginBtn);
+
+    const toggleBtn = document.createElement("button");
+    toggleBtn.className = "btn btn-warning";
+    toggleBtn.innerHTML = `<i class="fas fa-toggle-${token.is_active ? "off" : "on"}"></i> ${token.is_active ? "Pasif Yap" : "Aktif Yap"}`;
+    toggleBtn.addEventListener("click", () => toggleToken(token.username));
+    actionsDiv.appendChild(toggleBtn);
+
+    const validateBtn = document.createElement("button");
+    validateBtn.className = "btn btn-success";
+    validateBtn.innerHTML = '<i class="fas fa-check-circle"></i> Dogrula';
+    validateBtn.addEventListener("click", () => validateToken(token.username));
+    actionsDiv.appendChild(validateBtn);
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "btn btn-danger";
+    deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Sil';
+    deleteBtn.addEventListener("click", () => deleteToken(token.username));
+    actionsDiv.appendChild(deleteBtn);
+
+    if (token.deleted_at) {
+        const restoreBtn = document.createElement("button");
+        restoreBtn.className = "btn";
+        restoreBtn.innerHTML = '<i class="fas fa-undo"></i> Geri Al';
+        restoreBtn.addEventListener("click", () => restoreToken(token.username));
+        actionsDiv.appendChild(restoreBtn);
+    }
 
     return card;
+}
+
+async function restoreToken(username) {
+    try {
+        const data = await postJson("/admin/restore_token", { username });
+        if (data.success) {
+            showAlert(data.message, "success");
+            loadTokens();
+            loadStats();
+            return;
+        }
+        showAlert(data.message, "error");
+    } catch (error) {
+        showAlert("Geri alma basarisiz: " + error.message, "error");
+    }
 }
 
 async function toggleToken(username) {
@@ -219,6 +564,7 @@ async function toggleToken(username) {
         const data = await response.json();
         if (data.success) {
             showAlert(data.message, "success");
+            loadStats();
             loadTokens();
             return;
         }
@@ -241,9 +587,10 @@ async function validateToken(username) {
         const data = await response.json();
         if (data.success) {
             if (data.is_valid) {
-                showAlert(`✓ ${username} icin token gecerli!`, "success");
+                showResultModal("success", "Token Geçerli!", `@${username} için token geçerli ve aktif durumda.`);
             } else {
-                showAlert(`✗ ${username} icin token gecersiz!`, "error");
+                showResultModal("error", "Token Geçersiz!", `@${username} için token geçersiz veya süresi dolmuş.`);
+                loadStats();
                 loadTokens();
             }
             return;
@@ -269,6 +616,7 @@ async function deleteToken(username) {
         const data = await response.json();
         if (data.success) {
             showAlert(data.message, "success");
+            loadStats();
             loadTokens();
             return;
         }
@@ -278,42 +626,130 @@ async function deleteToken(username) {
     }
 }
 
-async function reloginToken(username) {
-    if (!confirm(`@${username} icin tekrar giris yapilacak ve token yenilenecek. Devam edilsin mi?`)) {
+let _reloginUsername = null;
+let _reloginMissing = [];
+
+const RELOGIN_FIELD_LABELS = {
+    password: "Sifre",
+    device_id: "Device ID",
+    user_agent: "User Agent",
+    android_id: "Android ID",
+};
+
+function openReloginFieldsModal(username, missing) {
+    _reloginUsername = username;
+    _reloginMissing = missing || [];
+    const modal = document.getElementById("reloginFieldsModal");
+    const msgEl = document.getElementById("reloginFieldsMessage");
+    const formEl = document.getElementById("reloginFieldsForm");
+    if (!formEl) return;
+    if (msgEl) msgEl.textContent = "@" + username + " icin asagidaki alanlar eksik. Girilen degerler hesaba kaydedilir ve tekrar giris yapilir.";
+    formEl.innerHTML = "";
+    const inputStyle = "width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.08); color: #fff; font-size: 14px;";
+    _reloginMissing.forEach((key) => {
+        const label = document.createElement("label");
+        label.style.cssText = "display: block; color: rgba(255,255,255,0.9); margin-bottom: 6px; font-size: 14px;";
+        label.textContent = RELOGIN_FIELD_LABELS[key] || key;
+        formEl.appendChild(label);
+        const isTextarea = key === "user_agent";
+        const input = isTextarea ? document.createElement("textarea") : document.createElement("input");
+        input.id = "relogin_field_" + key;
+        input.setAttribute("data-field", key);
+        if (!isTextarea) input.type = key === "password" ? "password" : "text";
+        input.placeholder = key === "password" ? "Sifrenizi girin" : RELOGIN_FIELD_LABELS[key] + " girin";
+        input.style.cssText = inputStyle;
+        if (isTextarea) input.rows = 3;
+        input.onkeydown = (e) => { if (e.key === "Enter" && key !== "user_agent") submitReloginFields(); };
+        formEl.appendChild(input);
+    });
+    if (modal) modal.classList.add("show");
+    const first = formEl.querySelector("input, textarea");
+    if (first) first.focus();
+}
+
+function closeReloginFieldsModal() {
+    _reloginUsername = null;
+    _reloginMissing = [];
+    const modal = document.getElementById("reloginFieldsModal");
+    if (modal) modal.classList.remove("show");
+}
+
+async function reloginToken(username, overrides) {
+    const hasOverrides = overrides && typeof overrides === "object" && Object.keys(overrides).length > 0;
+    if (!hasOverrides && !confirm(`@${username} icin tekrar giris yapilacak ve token yenilenecek. Devam edilsin mi?`)) {
         return;
     }
 
-    showAlert("Tekrar giris yapiliyor...", "info");
+    if (!hasOverrides) {
+        showAlert("Tekrar giris yapiliyor...", "info");
+    }
 
     try {
+        const payload = { username };
+        if (overrides && typeof overrides === "object") {
+            if (overrides.password != null) payload.password = overrides.password;
+            if (overrides.device_id != null) payload.device_id = overrides.device_id;
+            if (overrides.user_agent != null) payload.user_agent = overrides.user_agent;
+            if (overrides.android_id != null) payload.android_id = overrides.android_id;
+        } else if (typeof overrides === "string") {
+            payload.password = overrides;
+        }
         const response = await fetch("/admin/relogin_token", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username }),
+            body: JSON.stringify(payload),
         });
 
         const data = await response.json();
         if (data.success) {
+            closeReloginFieldsModal();
             showAlert(data.message, "success");
+            loadStats();
             loadTokens();
+            return;
+        }
+        if (data.code === "FIELDS_REQUIRED" && data.missing && data.missing.length > 0) {
+            openReloginFieldsModal(username, data.missing);
             return;
         }
         showAlert(data.message, "error");
     } catch (error) {
-        showAlert(`Bir hata olustu: ${error.message}`, "error");
+        showAlert("Bir hata olustu: " + error.message, "error");
     }
+}
+
+async function submitReloginFields() {
+    if (!_reloginUsername || !_reloginMissing.length) {
+        closeReloginFieldsModal();
+        return;
+    }
+    const overrides = {};
+    let allFilled = true;
+    _reloginMissing.forEach((key) => {
+        const el = document.getElementById("relogin_field_" + key);
+        const val = el ? el.value.trim() : "";
+        if (!val) allFilled = false;
+        overrides[key] = val;
+    });
+    if (!allFilled) {
+        showAlert("Lutfen tum eksik alanlari doldurun.", "error");
+        return;
+    }
+    closeReloginFieldsModal();
+    showAlert("Kaydediliyor ve tekrar giris yapiliyor...", "info");
+    await reloginToken(_reloginUsername, overrides);
 }
 
 async function editToken(username) {
     try {
-        const response = await fetch("/admin/get_tokens");
+        const response = await fetch("/admin/get_tokens?username=" + encodeURIComponent(username));
         const data = await response.json();
         if (!data.success) {
-            showAlert("Tokenler yuklenemedi", "error");
+            showAlert("Token yuklenemedi", "error");
             return;
         }
 
-        const token = data.tokens.find((item) => item.username === username);
+        const token = data.tokens && data.tokens[0];
         if (!token) {
             showAlert("Token bulunamadi", "error");
             return;
@@ -365,10 +801,10 @@ document.getElementById("addTokenForm").addEventListener("submit", async (event)
 
         const data = await response.json();
         if (data.success) {
-            const successMsg = data.username && data.full_name ? `✓ Token basariyla eklendi: @${data.username} (${data.full_name})` : data.message;
-            showAlert(successMsg, "success");
             document.getElementById("addTokenForm").reset();
+            loadStats();
             loadTokens();
+            showResultModal("success", "Token Başarıyla Bağlandı!", `@${data.username}${data.full_name ? ` (${data.full_name})` : ""} hesabı için token başarıyla eklendi ve aktif edildi.`);
             return;
         }
         showAlert(data.message, "error");
@@ -386,8 +822,48 @@ document.getElementById("editModal").addEventListener("click", (event) => {
 document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
         closeEditModal();
+        closeSuccessModal();
     }
 });
+
+let _resultTimer = null;
+
+function showResultModal(type, title, detail) {
+    const modal = document.getElementById("successModal");
+    const iconEl = document.getElementById("resultIcon");
+    const iconInner = document.getElementById("resultIconInner");
+    const titleEl = document.getElementById("resultTitle");
+    const detailEl = document.getElementById("resultDetail");
+    const btnEl = document.getElementById("resultCloseBtn");
+
+    const isSuccess = type === "success";
+    const color = isSuccess ? "#2ecc71" : "#e74c3c";
+    const colorAlpha15 = isSuccess ? "rgba(39,174,96,0.15)" : "rgba(231,76,60,0.15)";
+    const colorAlpha40 = isSuccess ? "rgba(39,174,96,0.4)" : "rgba(231,76,60,0.4)";
+
+    iconEl.style.background = colorAlpha15;
+    iconEl.style.borderColor = colorAlpha40;
+    iconInner.style.color = color;
+    iconInner.className = isSuccess ? "fas fa-check" : "fas fa-times";
+    titleEl.style.color = color;
+    titleEl.textContent = title;
+    detailEl.textContent = detail;
+    btnEl.style.background = colorAlpha15;
+    btnEl.style.borderColor = colorAlpha40;
+    btnEl.style.color = color;
+
+    modal.classList.add("show");
+    if (_resultTimer) clearTimeout(_resultTimer);
+    _resultTimer = setTimeout(() => closeSuccessModal(), 4000);
+}
+
+function closeSuccessModal() {
+    document.getElementById("successModal").classList.remove("show");
+    if (_resultTimer) {
+        clearTimeout(_resultTimer);
+        _resultTimer = null;
+    }
+}
 
 document.getElementById("editTokenForm").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -419,6 +895,7 @@ document.getElementById("editTokenForm").addEventListener("submit", async (event
         if (data.success) {
             showAlert(data.message, "success");
             closeEditModal();
+            loadStats();
             loadTokens();
             return;
         }
@@ -458,12 +935,32 @@ window.closeEditModal = closeEditModal;
 window.removeExemption = removeExemption;
 window.removeExemptionsByLink = removeExemptionsByLink;
 window.toggleExemptionsPanel = toggleExemptionsPanel;
+window.toggleAddTokenPanel = toggleAddTokenPanel;
+window.toggleTokensListPanel = toggleTokensListPanel;
+window.toggleHiddenTokens = toggleHiddenTokens;
+window.toggleAuditPanel = toggleAuditPanel;
+window.toggleGlobalExemptionPanel = toggleGlobalExemptionPanel;
+window.closeSuccessModal = closeSuccessModal;
+window.closeReloginFieldsModal = closeReloginFieldsModal;
+window.submitReloginFields = submitReloginFields;
 
-loadTokens();
+loadStats();
+document.getElementById("tokenSearch") && document.getElementById("tokenSearch").addEventListener("input", () => { _tokenPage = 1; loadTokens(); });
+document.getElementById("tokenPageSize") && document.getElementById("tokenPageSize").addEventListener("change", () => { _tokenPage = 1; loadTokens(); });
+document.getElementById("tokenPrevPage") && document.getElementById("tokenPrevPage").addEventListener("click", () => { if (_tokenPage > 1) { _tokenPage--; loadTokens(); } });
+document.getElementById("tokenNextPage") && document.getElementById("tokenNextPage").addEventListener("click", () => { _tokenPage++; loadTokens(); });
+
+document.getElementById("exemptionSearch") && document.getElementById("exemptionSearch").addEventListener("input", () => { _exemptionPage = 1; loadExemptions(); });
+document.getElementById("exemptionPageSize") && document.getElementById("exemptionPageSize").addEventListener("change", () => { _exemptionPage = 1; loadExemptions(); });
+document.getElementById("exemptionPrevPage") && document.getElementById("exemptionPrevPage").addEventListener("click", () => { if (_exemptionPage > 1) { _exemptionPage--; loadExemptions(); } });
+document.getElementById("exemptionNextPage") && document.getElementById("exemptionNextPage").addEventListener("click", () => { _exemptionPage++; loadExemptions(); });
+
 setInterval(() => {
-    loadTokens();
-    const body = document.getElementById("exemptionsSectionBody");
-    if (body && !body.classList.contains("collapsed")) {
-        loadExemptions();
-    }
+    loadStats();
+    const tokensBody = document.getElementById("tokensListBody");
+    if (tokensBody && !tokensBody.classList.contains("collapsed")) loadTokens();
+    const exemptBody = document.getElementById("exemptionsSectionBody");
+    if (exemptBody && !exemptBody.classList.contains("collapsed")) loadExemptions();
+    const globalExemptBody = document.getElementById("globalExemptionBody");
+    if (globalExemptBody && !globalExemptBody.classList.contains("collapsed")) loadGlobalExemptions();
 }, 30000);

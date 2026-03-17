@@ -1,7 +1,14 @@
-from app_core import create_app
-import flask.cli
 import logging
 
+import flask.cli
+
+from app_core import create_app
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 app = create_app()
 
