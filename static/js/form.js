@@ -35,10 +35,17 @@ function loadGroups() {
                     const div = document.createElement('div');
                     div.className = 'dropdown-option';
                     div.innerHTML = `<i class="fas fa-users" style="color: #a855f7;"></i> ${g.name} <span style="opacity: 0.6;">(${g.member_count} üye)</span>`;
-                    div.onclick = function() {
+                    div.onclick = function(e) {
+                        e.stopPropagation();
                         const textSpan = document.querySelector('#groupDropdown .dropdown-text');
                         textSpan.textContent = `${g.name} (${g.member_count} üye)`;
-                        select.value = g.id;
+                        
+                        // Set value to hidden select
+                        const hiddenSelect = document.getElementById('groupSelect');
+                        if (hiddenSelect) {
+                            hiddenSelect.value = g.id;
+                            console.log("Set hiddenSelect value to:", g.id);
+                        }
                         
                         alert("Grup seçildi: " + g.id + " - Üyeler yükleniyor...");
                         
@@ -62,8 +69,9 @@ function loadGroups() {
 }
 
 function loadGroupMembers() {
+    // Get the hidden select element
     const select = document.getElementById("groupSelect");
-    const threadId = select.value;
+    const threadId = select ? select.value : '';
     const textarea = document.getElementById("grup_uye");
     const postsSection = document.getElementById("groupPostsSection");
     const postSelect = document.getElementById("postSelect");
