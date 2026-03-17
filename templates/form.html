@@ -292,30 +292,60 @@
                                         background: rgba(255,255,255,0.08) !important;
                                         border: 1px solid rgba(255,255,255,0.15) !important;
                                         color: #fff !important;
-                                        border-radius: 8px;
-                                        padding: 10px 35px 10px 12px;
+                                        border-radius: 10px;
+                                        padding: 12px 40px 12px 14px;
                                         appearance: none;
                                         -webkit-appearance: none;
                                         -moz-appearance: none;
-                                        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23ffffff' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+                                        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23a0a0a0' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
                                         background-repeat: no-repeat;
-                                        background-position: right 12px center;
+                                        background-position: right 14px center;
                                         cursor: pointer;
                                         transition: all 0.2s ease;
+                                        font-size: 14px;
+                                        font-weight: 500;
                                     }
                                     .custom-select:hover {
-                                        border-color: rgba(255,255,255,0.3) !important;
+                                        border-color: rgba(255,255,255,0.4) !important;
                                         background-color: rgba(255,255,255,0.12) !important;
                                     }
                                     .custom-select:focus {
                                         outline: none;
-                                        border-color: #6c5ce7 !important;
-                                        box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.25);
+                                        border-color: #a855f7 !important;
+                                        box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2);
                                     }
                                     .custom-select option {
-                                        background: #1a1a2e;
+                                        background: #1e1e32;
                                         color: #fff;
-                                        padding: 10px;
+                                        padding: 14px 16px;
+                                        font-size: 14px;
+                                        border-bottom: 1px solid rgba(255,255,255,0.05);
+                                        transition: all 0.15s ease;
+                                    }
+                                    .custom-select option:hover,
+                                    .custom-select option:focus,
+                                    .custom-select option:checked {
+                                        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                                        color: #fff;
+                                        font-weight: 600;
+                                    }
+                                    
+                                    /* Custom dropdown wrapper for better styling */
+                                    .select-wrapper {
+                                        position: relative;
+                                    }
+                                    .select-wrapper::after {
+                                        content: '';
+                                        position: absolute;
+                                        right: 14px;
+                                        top: 50%;
+                                        transform: translateY(-50%);
+                                        width: 0;
+                                        height: 0;
+                                        border-left: 5px solid transparent;
+                                        border-right: 5px solid transparent;
+                                        border-top: 6px solid #a0a0a0;
+                                        pointer-events: none;
                                     }
                                 </style>
                             </div>
