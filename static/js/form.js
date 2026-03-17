@@ -44,7 +44,6 @@ function loadGroups() {
                         const hiddenSelect = document.getElementById('groupSelect');
                         if (hiddenSelect) {
                             hiddenSelect.value = g.id;
-                            console.log("Set hiddenSelect value to:", g.id);
                         }
                         
                         // Load members when group is selected - pass threadId directly
@@ -79,11 +78,7 @@ function loadGroupMembers(threadIdFromDropdown) {
     const postSelect = document.getElementById("postSelect");
     const dropdownText = document.querySelector('#groupDropdown .dropdown-text');
     
-    console.log("loadGroupMembers called, threadId:", threadId);
-    console.log("textarea element:", textarea);
-    
     if (!threadId) {
-        console.log("No threadId, hiding posts section");
         postsSection.style.display = "none";
         return;
     }
@@ -100,7 +95,6 @@ function loadGroupMembers(threadIdFromDropdown) {
     fetch("/api/get_group_members/" + threadId)
         .then(r => r.json())
         .then(data => {
-            console.log("API response:", data);
             if (hiddenSelect) {
                 hiddenSelect.disabled = false;
             }
@@ -112,15 +106,11 @@ function loadGroupMembers(threadIdFromDropdown) {
             }
             
             if (data.usernames && data.usernames.length > 0) {
-                console.log("Setting textarea value with", data.usernames.length, "usernames");
                 textarea.value = data.usernames.join("\n");
                 updateUserCount();
-            } else {
-                console.log("No usernames returned");
             }
         })
         .catch(err => {
-            console.error("Error loading members:", err);
             if (hiddenSelect) {
                 hiddenSelect.disabled = false;
             }
