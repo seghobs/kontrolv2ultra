@@ -118,9 +118,9 @@ function loadGroupMembers(threadIdFromDropdown) {
             showTokenErrorModal("Üyeler yüklenemedi: " + err.message);
         });
     
-    // Paylaşımları yükle
+    // Paylaşımları yükle - threadId ile birlikte
     postsSection.style.display = "block";
-    loadGroupPosts();
+    loadGroupPosts(threadId);
 }
 
 function addPostLink() {
@@ -183,9 +183,13 @@ function addAllPosts() {
     setCheckMode("multi");
 }
 
-function loadGroupPosts() {
-    const groupSelect = document.getElementById("groupSelect");
-    const threadId = groupSelect ? groupSelect.value : '';
+function loadGroupPosts(threadIdFromMembers) {
+    let threadId = threadIdFromMembers;
+    if (!threadId) {
+        const groupSelect = document.getElementById("groupSelect");
+        threadId = groupSelect ? groupSelect.value : '';
+    }
+    
     const dateFilterEl = document.getElementById("dateFilter");
     const dateFilter = dateFilterEl ? dateFilterEl.value : 'today';
     const postSelect = document.getElementById("postSelect");
