@@ -13,6 +13,9 @@ function updateUserCount() {
 
 window.updateUserCount = updateUserCount;
 
+// Global değişken - seçili grup ID'si
+let currentThreadId = '';
+
 function loadGroups() {
     const select = document.getElementById("groupSelect");
     const dropdownText = document.querySelector('#groupDropdown .dropdown-text');
@@ -40,11 +43,12 @@ function loadGroups() {
                         const textSpan = document.querySelector('#groupDropdown .dropdown-text');
                         textSpan.textContent = `${g.name} (${g.member_count} üye)`;
                         
-                        // Set value to hidden select
+                        // Set value to hidden select and global variable
                         const hiddenSelect = document.getElementById('groupSelect');
                         if (hiddenSelect) {
                             hiddenSelect.value = g.id;
                         }
+                        currentThreadId = g.id;
                         
                         // Load members when group is selected - pass threadId directly
                         loadGroupMembers(g.id);
@@ -150,11 +154,16 @@ function selectDateAndLoadPosts(dateValue, dateText) {
 
 // Load posts using current group selection
 function loadGroupPostsWithCurrentGroup() {
-    const groupSelect = document.getElementById("groupSelect");
-    const threadId = groupSelect ? groupSelect.value : '';
-    console.log("loadGroupPostsWithCurrentGroup called, threadId:", threadId);
-    if (threadId) {
-        loadGroupPosts(threadId);
+    console.log("loadGroupPostsWithCurrentGroup called, currentThreadId:", currentThreadId);
+    if (currentThreadId) {
+        loadGroupPosts(currentThreadId);
+    } else {
+        // Fallback to hidden select
+        const groupSelect = document.getElementById("groupSelect");
+        const threadId = groupSelect ? groupSelect.value : '';
+        if (threadId) {
+            loadGroupPosts(threadId);
+        }
     }
 }
 
