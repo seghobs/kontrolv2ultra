@@ -1,5 +1,7 @@
 import html
 import logging
+import random
+import time
 
 from flask import Blueprint, jsonify, render_template, request
 
@@ -113,11 +115,20 @@ def index():
                 post_senders[url] = normalize_username(sender)
         logger.info(f"DEBUG: post_senders parsed: {post_senders}")
         
+        link_count = 0
         for link_raw in links_raw:
             link_single = link_raw.strip().rstrip('/')
             if not link_single:
                 continue
-                
+            
+            # Her link arasinda random bekleme (insan davranisi)
+            if link_count > 0:
+                delay = random.uniform(5, 20)  # 5-20 saniye arası random
+                logger.info(f"Bekleme: {delay:.1f} saniye...")
+                time.sleep(delay)
+            
+            link_count += 1
+            
             media_id = donustur(link_single)
             if media_id is None:
                 link_results.append({
