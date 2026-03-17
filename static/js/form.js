@@ -47,10 +47,8 @@ function loadGroups() {
                             console.log("Set hiddenSelect value to:", g.id);
                         }
                         
-                        alert("Grup seçildi: " + g.id + " - Üyeler yükleniyor...");
-                        
-                        // Load members when group is selected
-                        loadGroupMembers();
+                        // Load members when group is selected - pass threadId directly
+                        loadGroupMembers(g.id);
                         
                         // Close dropdown
                         document.querySelector('#groupDropdown .dropdown-menu').classList.remove('show');
@@ -68,10 +66,14 @@ function loadGroups() {
         });
 }
 
-function loadGroupMembers() {
-    // Get the hidden select element
-    const select = document.getElementById("groupSelect");
-    const threadId = select ? select.value : '';
+function loadGroupMembers(threadIdFromDropdown) {
+    // Get threadId either from parameter or from hidden select
+    let threadId = threadIdFromDropdown;
+    if (!threadId) {
+        const select = document.getElementById("groupSelect");
+        threadId = select ? select.value : '';
+    }
+    
     const textarea = document.getElementById("grup_uye");
     const postsSection = document.getElementById("groupPostsSection");
     const postSelect = document.getElementById("postSelect");
@@ -90,13 +92,18 @@ function loadGroupMembers() {
         dropdownText.textContent = "Üyeler yükleniyor...";
     }
     
-    select.disabled = true;
+    const hiddenSelect = document.getElementById("groupSelect");
+    if (hiddenSelect) {
+        hiddenSelect.disabled = true;
+    }
     
     fetch("/api/get_group_members/" + threadId)
         .then(r => r.json())
         .then(data => {
             console.log("API response:", data);
-            select.disabled = false;
+            if (hiddenSelect) {
+                hiddenSelect.disabled = false;
+            }
             
             if (!data.ok) {
                 showTokenErrorModal(data.error || "Üyeler yüklenemedi");
@@ -114,7 +121,9 @@ function loadGroupMembers() {
         })
         .catch(err => {
             console.error("Error loading members:", err);
-            select.disabled = false;
+            if (hiddenSelect) {
+                hiddenSelect.disabled = false;
+            }
             if (dropdownText) dropdownText.textContent = "-- Instagram Grubu Seç --";
             showTokenErrorModal("Üyeler yüklenemedi: " + err.message);
         });
