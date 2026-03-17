@@ -39,7 +39,9 @@ function loadGroups() {
                         const textSpan = document.querySelector('#groupDropdown .dropdown-text');
                         textSpan.textContent = `${g.name} (${g.member_count} üye)`;
                         select.value = g.id;
-                        select.dispatchEvent(new Event('change'));
+                        
+                        // Load members when group is selected
+                        loadGroupMembers();
                         
                         // Close dropdown
                         document.querySelector('#groupDropdown .dropdown-menu').classList.remove('show');
@@ -63,14 +65,18 @@ function loadGroupMembers() {
     const textarea = document.getElementById("grup_uye");
     const postsSection = document.getElementById("groupPostsSection");
     const postSelect = document.getElementById("postSelect");
+    const dropdownText = document.querySelector('#groupDropdown .dropdown-text');
     
     if (!threadId) {
         postsSection.style.display = "none";
         return;
     }
     
+    if (dropdownText) {
+        dropdownText.textContent = "Üyeler yükleniyor...";
+    }
+    
     select.disabled = true;
-    select.options[select.selectedIndex].text = "Üyeler yükleniyor...";
     
     fetch("/api/get_group_members/" + threadId)
         .then(r => r.json())
@@ -79,6 +85,7 @@ function loadGroupMembers() {
             
             if (!data.ok) {
                 showTokenErrorModal(data.error || "Üyeler yüklenemedi");
+                if (dropdownText) dropdownText.textContent = "-- Instagram Grubu Seç --";
                 return;
             }
             
@@ -89,6 +96,7 @@ function loadGroupMembers() {
         })
         .catch(err => {
             select.disabled = false;
+            if (dropdownText) dropdownText.textContent = "-- Instagram Grubu Seç --";
             showTokenErrorModal("Üyeler yüklenemedi: " + err.message);
         });
     
