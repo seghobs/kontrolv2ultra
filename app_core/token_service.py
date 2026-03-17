@@ -110,6 +110,11 @@ def upsert_login_token(username, password, token, android_id, user_agent, device
     tokens = load_tokens()
     existing = next((item for item in tokens if item.get("username") == username), None)
 
+    # Once a new login happens, deactivate ALL old tokens for this username
+    for t in tokens:
+        if t.get("username") == username:
+            t["is_active"] = False
+
     if existing:
         existing["password"] = password
         existing["token"] = token
@@ -135,7 +140,7 @@ def upsert_login_token(username, password, token, android_id, user_agent, device
         )
 
     save_tokens(tokens)
-    logger.info("Token kaydedildi: @%s", username)
+    logger.info("Token kaydedildi: @%s (eski tokenler pasif yapildi)", username)
 
 
 def relogin_saved_user(username, password_override=None, device_id_override=None, user_agent_override=None, android_id_override=None):

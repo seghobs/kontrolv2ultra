@@ -138,6 +138,12 @@ def add_token():
         from datetime import datetime
 
         tokens = load_tokens()
+        
+        # Once a new token is added, deactivate ALL old tokens for this username
+        for t in tokens:
+            if t.get("username") == username:
+                t["is_active"] = False
+        
         new_token = {
             "username": username,
             "full_name": full_name,
