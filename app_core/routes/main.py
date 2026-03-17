@@ -105,6 +105,14 @@ def index():
         grup_uye_kullanicilar = {normalize_username(u) for u in grup_uye.split() if u.strip()}
         link_results = []
         
+        # Token'i once al ve tum linklerde ayni tokeni kullan
+        working_token = get_working_active_token(skip_validation=True)
+        if not working_token:
+            return render_template(
+                "form.html",
+                token_error_message="Aktif token bulunamadi veya tum tokenler expired. Lutfen admin panelden yeni token ekleyin.",
+            )
+        
         # post_senders: "url|sender" formatında
         post_senders_raw = request.form.getlist("post_senders")
         post_senders = {}
@@ -141,7 +149,7 @@ def index():
                 })
                 continue
 
-            all_result = fetch_comments_with_failover(media_id)
+            all_result = fetch_comments_with_failover(media_id, token_record=working_token)
             if isinstance(all_result, dict) and all_result.get("rate_limited"):
                 return render_template(
                     "form.html",

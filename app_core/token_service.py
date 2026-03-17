@@ -65,12 +65,13 @@ def get_working_active_token(excluded_usernames=None, skip_validation=False):
     return None
 
 
-def fetch_comments_with_failover(media_id, progress_callback=None):
+def fetch_comments_with_failover(media_id, progress_callback=None, token_record=None):
     max_retries = 10
     retry_count = 0
     tried_usernames = set()
     usernames = set()
-    token_record = get_working_active_token()
+    if token_record is None:
+        token_record = get_working_active_token()
 
     while retry_count < max_retries:
         if not token_record or not token_record.get("token"):
