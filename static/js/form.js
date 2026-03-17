@@ -125,10 +125,13 @@ function loadGroupMembers(threadIdFromDropdown) {
 
 // Wrapper function to load posts when date changes
 function selectDateAndLoadPosts(dateValue, dateText) {
+    console.log("selectDateAndLoadPosts called:", dateValue, dateText);
+    
     // Update hidden select
     const dateFilter = document.getElementById('dateFilter');
     if (dateFilter) {
         dateFilter.value = dateValue;
+        console.log("Set dateFilter value to:", dateValue);
     }
     
     // Update dropdown text
@@ -149,6 +152,7 @@ function selectDateAndLoadPosts(dateValue, dateText) {
 function loadGroupPostsWithCurrentGroup() {
     const groupSelect = document.getElementById("groupSelect");
     const threadId = groupSelect ? groupSelect.value : '';
+    console.log("loadGroupPostsWithCurrentGroup called, threadId:", threadId);
     if (threadId) {
         loadGroupPosts(threadId);
     }
