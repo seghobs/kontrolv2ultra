@@ -185,15 +185,23 @@ function addAllPosts() {
 
 function loadGroupPosts() {
     const groupSelect = document.getElementById("groupSelect");
-    const threadId = groupSelect.value;
-    const dateFilter = document.getElementById("dateFilter").value;
+    const threadId = groupSelect ? groupSelect.value : '';
+    const dateFilterEl = document.getElementById("dateFilter");
+    const dateFilter = dateFilterEl ? dateFilterEl.value : 'today';
     const postSelect = document.getElementById("postSelect");
     const dropdownText = document.querySelector('#postDropdown .dropdown-text');
     const dropdownOptions = document.querySelector('#postDropdown .dropdown-options');
     
-    if (!threadId) return;
+    console.log("loadGroupPosts called, threadId:", threadId, "dateFilter:", dateFilter);
     
-    dropdownOptions.innerHTML = '<div class="dropdown-option" style="color: rgba(255,255,255,0.5);">Paylaşımlar yükleniyor...</div>';
+    if (!threadId) {
+        console.log("No threadId, returning");
+        return;
+    }
+    
+    if (dropdownText) {
+        dropdownText.textContent = "Paylaşımlar yükleniyor...";
+    }
     
     fetch("/api/get_group_posts/" + threadId + "?date=" + dateFilter)
         .then(r => r.json())
